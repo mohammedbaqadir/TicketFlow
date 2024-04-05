@@ -28,7 +28,7 @@
 
             $request->session()->regenerate();
 
-            return redirect()->intended( route( 'home', absolute: false ) );
+            return redirect()->route( 'home' );
         }
 
         /**

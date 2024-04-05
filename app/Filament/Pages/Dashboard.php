@@ -9,4 +9,10 @@
         protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
         protected static string $view = 'filament.pages.dashboard';
+
+        public static function canAccess() : bool
+        {
+            return userHasRole( 'admin' );
+        }
+
     }

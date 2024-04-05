@@ -4,6 +4,7 @@
 
     // use Illuminate\Contracts\Auth\MustVerifyEmail;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
+    use Illuminate\Database\Eloquent\Relations\HasMany;
     use Illuminate\Foundation\Auth\User as Authenticatable;
     use Illuminate\Notifications\Notifiable;
 
@@ -17,6 +18,7 @@
          * @var array<int, string>
          */
         protected $fillable = [
+            'name',
             'email',
             'password',
             'role',
@@ -45,7 +47,26 @@
             ];
         }
 
-        public function hasRole(string $role) {
-            return $this->role === $role;
+
+        public function scopeIsAgent( $query )
+        {
+            return $query->where( 'role', 'agent' );
         }
+
+        public function scopeIsEmployee( $query )
+        {
+            return $query->where( 'role', 'employee' );
+        }
+
+
+        public function createdTickets() : HasMany
+        {
+            return $this->hasMany( Ticket::class, 'created_by' );
+        }
+
+        public function assignedTickets() : HasMany
+        {
+            return $this->hasMany( Ticket::class, 'assigned_to' );
+        }
+
     }

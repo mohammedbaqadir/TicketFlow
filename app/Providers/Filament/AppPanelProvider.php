@@ -3,9 +3,11 @@
     namespace App\Providers\Filament;
 
     use App\Filament\Pages\Dashboard;
+    use App\Models\User;
     use Filament\Http\Middleware\Authenticate;
     use Filament\Http\Middleware\DisableBladeIconComponents;
     use Filament\Http\Middleware\DispatchServingFilamentEvent;
+    use Filament\Navigation\NavigationItem;
     use Filament\Panel;
     use Filament\PanelProvider;
     use Filament\Support\Colors\Color;
@@ -17,6 +19,7 @@
     use Illuminate\Session\Middleware\AuthenticateSession;
     use Illuminate\Session\Middleware\StartSession;
     use Illuminate\View\Middleware\ShareErrorsFromSession;
+    use App\Filament\Resources\UserResource;
 
     class AppPanelProvider extends PanelProvider
     {
@@ -26,6 +29,7 @@
                 ->default()
                 ->id( 'app' )
                 ->path( 'app' )
+                ->topNavigation()
                 ->colors( [
                     'primary' => Color::Amber,
                 ] )

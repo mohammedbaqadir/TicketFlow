@@ -14,7 +14,6 @@
         )
         ->withMiddleware( function ( Middleware $middleware ) {
             $middleware->alias( [
-                'role' => AuthBasedOnRole::class
             ] );
         } )
         ->withExceptions( function ( Exceptions $exceptions ) {
