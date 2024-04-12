@@ -12,7 +12,7 @@
             $route = match ( auth()->user()->role ) {
                 'admin' => 'filament.app.pages.dashboard',
                 'agent' => 'filament.app.resources.tickets.index',
-                'employee' => 'my-tickets',
+                'employee' => 'filament.app.resources.tickets.my-tickets',
             };
             return redirect()->route( $route );
         }

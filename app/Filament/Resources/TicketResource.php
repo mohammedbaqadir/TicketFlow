@@ -3,10 +3,16 @@
     namespace App\Filament\Resources;
 
     use App\Filament\Resources\TicketResource\Pages;
+    use App\Filament\Resources\TicketResource\Pages\CreateTicket;
+    use App\Filament\Resources\TicketResource\Pages\EditTicket;
+    use App\Filament\Resources\TicketResource\Pages\ListTickets;
+    use App\Filament\Resources\TicketResource\Pages\MyTickets;
+    use App\Filament\Resources\TicketResource\Pages\ViewTicket;
     use App\Filament\Resources\TicketResource\RelationManagers;
     use App\Filament\Resources\TicketResource\RelationManagers\AssigneeRelationManager;
     use App\Filament\Resources\TicketResource\RelationManagers\RequestorRelationManager;
     use App\Models\Ticket;
+    use App\Models\User;
     use Exception;
     use Filament\Forms;
     use Filament\Forms\Components\DateTimePicker;
@@ -16,6 +22,9 @@
     use Filament\Forms\Form;
     use Filament\Resources\Resource;
     use Filament\Tables;
+    use Filament\Tables\Actions\BulkActionGroup;
+    use Filament\Tables\Actions\DeleteBulkAction;
+    use Filament\Tables\Actions\EditAction;
     use Filament\Tables\Columns\TextColumn;
     use Filament\Tables\Filters\SelectFilter;
     use Filament\Tables\Table;
@@ -30,42 +39,10 @@
 
         protected static ?string $navigationIcon = 'heroicon-o-ticket';
 
-        /*       public static function form(Form $form): Form
-               {
-                   return $form
-                       ->schema([
-                           TextInput::make( 'title' )
-                               ->required()
-                               ->maxLength( 255 ),
-                           Textarea::make( 'description' )
-                               ->required(),
-                           Forms\Components\Hidden::make( 'status' )
-                               ->default( 'open' ),
-                           Forms\Components\Select::make( 'priority' )
-                               ->options( [
-                                   'low' => 'Low',
-                                   'medium' => 'Medium',
-                                   'high' => 'High',
-                               ] )
-                               ->required()
-                               ->reactive()
-                               ->afterStateUpdated( function ( $state, $set ) {
-                                   $set( 'timeout_at', now()->addHours( self::determineTimeout( $state ) ) );
-                               } ),
-                           Forms\Components\Hidden::make( 'timeout_at' ),
-                           Forms\Components\Hidden::make( 'created_by' )
-                               ->default( auth()->id() ),
-                           Forms\Components\Select::make( 'assigned_to' )
-                               ->relationship( 'assignee', 'name' )
-                               ->nullable(),
-
-                       ] );
-               }*/
-
-        public static function table(Table $table): Table
+        public static function table( Table $table ) : Table
         {
             return $table
-                ->columns([
+                ->columns( [
                     TextColumn::make( 'id' )->sortable(),
                     TextColumn::make( 'title' )->sortable()->searchable(),
                     TextColumn::make( 'description' )->sortable()->searchable(),
@@ -75,8 +52,9 @@
                     TextColumn::make( 'assignee.name' )->label( 'Assigned To' )->sortable()->searchable(),
                     TextColumn::make( 'created_at' )->sortable()->dateTime(),
                     TextColumn::make( 'timeout_at' )->sortable()->dateTime(),
-                ])
-                ->filters([
+                ] )
+                ->recordUrl( fn( Ticket $record ) => route( 'tickets.show', $record ) )
+                ->filters( [
                     SelectFilter::make( 'status' )
                         ->options( [
                             'open' => 'Open',
@@ -91,18 +69,18 @@
                             'medium' => 'Medium',
                             'high' => 'High',
                         ] ),
-                ])
-                ->actions([
-                    Tables\Actions\EditAction::make(),
-                ])
-                ->bulkActions([
-                    Tables\Actions\BulkActionGroup::make([
-                        Tables\Actions\DeleteBulkAction::make(),
-                    ]),
-                ]);
+                ] )
+                ->actions( [
+                    EditAction::make(),
+                ] )
+                ->bulkActions( [
+                    BulkActionGroup::make( [
+                        DeleteBulkAction::make(),
+                    ] ),
+                ] );
         }
 
-        public static function getRelations(): array
+        public static function getRelations() : array
         {
             return [
                 RequestorRelationManager::class,
@@ -110,15 +88,16 @@
             ];
         }
 
-        public static function getPages(): array
+        public static function getPages() : array
         {
             return [
-                'index' => Pages\ListTickets::route('/'),
-                'create' => Pages\CreateTicket::route('/create'),
-                'edit' => Pages\EditTicket::route( '/{record}/edit' ),
+                'index' => ListTickets::route( '/' ),
+                'create' => CreateTicket::route( '/create' ),
+                'edit' => EditTicket::route( '/{record}/edit' ),
+                'view' => ViewTicket::route( '/{record}'),
+                'myTickets' => MyTickets::route( 'my-tickets' ),
             ];
         }
-
 
 
     }
