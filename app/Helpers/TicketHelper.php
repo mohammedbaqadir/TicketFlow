@@ -1,32 +1,19 @@
 <?php
 
+    namespace App\Helpers;
+
     use GeminiAPI\Laravel\Facades\Gemini;
     use Illuminate\Support\Facades\Log;
 
-    if ( !function_exists( 'userHasRole' ) ) {
-        /**
-         * Check if the authenticated user has a given role.
-         *
-         * @param  string  $role
-         * @return bool
-         */
-        function userHasRole( string $role ) : bool
-        {
-            $user = auth()->user();
-
-            return $user !== null && $user->role === $role;
-        }
-
-    }
-
-    if ( !function_exists( 'determineTimeout' ) ) {
+    class TicketHelper
+    {
         /**
          * Determine the timeout based on the priority.
          *
          * @param  string  $priority
          * @return int
          */
-        function determineTimeout( string $priority ) : int
+        public static function determineTimeout( string $priority ) : int
         {
             return match ( $priority ) {
                 'high' => 2,
@@ -35,9 +22,7 @@
                 default => 8,
             };
         }
-    }
 
-    if ( !function_exists( 'determinePriority' ) ) {
         /**
          * Determine the priority based on the title and description.
          *
@@ -45,7 +30,8 @@
          * @param  string  $description
          * @return string
          */
-        function determinePriority( string $title, string $description ) : string{
+        public static function determinePriority( string $title, string $description ) : string
+        {
             $prompt = "
     **Input:**
         * Title: $title 
@@ -95,7 +81,9 @@
                 return strtolower( $response );
             } catch (Exception $e) {
                 Log::error( 'API error while determining priority: ' . $e->getMessage() );
-                return 'low'; // Set a default priority here
+                return 'low';
             }
         }
-}
+
+
+    }

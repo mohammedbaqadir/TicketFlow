@@ -3,6 +3,7 @@
     namespace App\Filament\Resources\TicketResource\Pages;
 
     use App\Filament\Resources\TicketResource;
+    use App\Helpers\TicketHelper;
     use Filament\Actions;
     use Filament\Forms\Components\Textarea;
     use Filament\Forms\Components\TextInput;
@@ -48,8 +49,8 @@
         {
             $data['status'] = 'open';
             $data['created_by'] = auth()->id();
-            $data['priority'] = determinePriority( $data['title'], $data['description'] );
-            $data['timeout_at'] = now()->addHours( determineTimeout( $data['priority'] ) );
+            $data['priority'] = TicketHelper::determinePriority( $data['title'], $data['description'] );
+            $data['timeout_at'] = now()->addHours( TicketHelper::determineTimeout( $data['priority'] ) );
             $data['assigned_to'] = null;
 
             return $data;

@@ -2,8 +2,8 @@
 
     namespace App\Http\Controllers;
 
-    use Illuminate\Http\Request;
-    use Illuminate\Routing\Route;
+
+    use Illuminate\Support\Facades\Route;
 
     class RedirectController extends Controller
     {
@@ -12,7 +12,7 @@
             $route = match ( auth()->user()->role ) {
                 'admin' => 'filament.app.pages.dashboard',
                 'agent' => 'filament.app.resources.tickets.index',
-                'employee' => 'filament.app.resources.tickets.my-tickets',
+                'employee' => 'filament.app.pages.my-tickets',
             };
             return redirect()->route( $route );
         }

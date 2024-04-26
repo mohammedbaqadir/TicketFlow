@@ -66,4 +66,28 @@
         {
             return $this->belongsTo( User::class, 'assigned_to' );
         }
+
+        public function scopeIsOpen( $query )
+        {
+            return $query->where( 'status', 'open' );
+        }
+
+        public function scopeIsInProgress( $query )
+        {
+            return $query->where( 'status', 'in-progress' );
+        }
+
+        public function scopeIsAwaitingAcceptance( $query )
+        {
+            return $query->where( 'status', 'awaiting-acceptance' );
+        }
+        public function scopeIsElevated( $query )
+        {
+            return $query->where( 'status', 'elevated' );
+        }
+
+        public function scopeIsClosed( $query )
+        {
+            return $query->where( 'status', 'closed' );
+        }
     }

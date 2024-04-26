@@ -3,24 +3,19 @@
     namespace App\Filament\Resources;
 
     use App\Filament\Forms\Components\PasswordInput;
-    use App\Filament\Resources\UserResource\Pages;
     use App\Filament\Resources\UserResource\Pages\CreateUser;
     use App\Filament\Resources\UserResource\Pages\EditUser;
     use App\Filament\Resources\UserResource\Pages\ListUsers;
     use App\Filament\Resources\UserResource\Pages\ShowUser;
     use App\Filament\Resources\UserResource\Pages\ViewUser;
-    use App\Filament\Resources\UserResource\RelationManagers;
-    use App\Filament\Resources\UserResource\RelationManagers\AssignedTicketsRelationManager;
-    use App\Filament\Resources\UserResource\RelationManagers\CreatedTicketsRelationManager;
+    use App\Helpers\NavigationHelper;
     use App\Models\User;
     use Exception;
-    use Filament\Forms;
     use Filament\Forms\Components\Select;
     use Filament\Forms\Components\TextInput;
     use Filament\Forms\Form;
     use Filament\Navigation\NavigationItem;
     use Filament\Resources\Resource;
-    use Filament\Tables;
     use Filament\Tables\Actions\BulkActionGroup;
     use Filament\Tables\Actions\DeleteAction;
     use Filament\Tables\Actions\DeleteBulkAction;
@@ -28,8 +23,6 @@
     use Filament\Tables\Columns\TextColumn;
     use Filament\Tables\Filters\SelectFilter;
     use Filament\Tables\Table;
-    use Illuminate\Database\Eloquent\Builder;
-    use Illuminate\Database\Eloquent\SoftDeletingScope;
 
     class UserResource extends Resource
     {
@@ -43,24 +36,19 @@
                     ->url( '/app/users?tableFilters[role][value]=agent' )
                     ->icon( 'heroicon-o-user-group' )
                     ->group( 'Users' )
-                    ->isActiveWhen( fn() => self::isActiveNavigationItem( 'agent' ) )
+                    ->isActiveWhen( fn() => NavigationHelper::isActiveNavigationItem( 'app/users', ['role' =>
+                        'agent' ]) )
                     ->badge( fn() => User::isAgent()->count() ),
                 NavigationItem::make( 'Emplyees' )
                     ->url( '/app/users?tableFilters[role][value]=employee' )
                     ->icon( 'heroicon-o-user-group' )
                     ->group( 'Users' )
-                    ->isActiveWhen( fn() => self::isActiveNavigationItem( 'employee' ) )
+                    ->isActiveWhen( fn() => NavigationHelper::isActiveNavigationItem( 'app/users', ['role' =>
+                        'employee'] ) )
                     ->badge( fn() => User::isEmployee()->count() )
             ];
-}
-
-        private static function isActiveNavigationItem( string $role ) : bool
-        {
-            $table_filters = request()->query( 'tableFilters', [] );
-            $role_value = $table_filters['role']['value'] ?? null;
-
-            return request()->is( 'app/users' ) && $role_value === $role;
         }
+
 
         public static function form( Form $form ) : Form
         {
@@ -111,7 +99,7 @@
                     TextColumn::make( 'role' )->sortable(),
                     TextColumn::make( 'created_at' )->sortable()->dateTime(),
                 ] )
-                ->recordUrl( fn( User $record ) => route( 'users.show', $record ) )
+                ->recordUrl( fn( User $record ) => route( 'filament.app.resources.users.view', $record ) )
                 ->filters( [
                     SelectFilter::make( 'role' )
                         ->options( [

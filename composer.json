@@ -13,6 +13,7 @@
     "livewire/livewire": "^3.5"
   },
   "require-dev": {
+    "roave/security-advisories": "dev-latest",
     "fakerphp/faker": "^1.23",
     "laravel/breeze": "^2.1",
     "laravel/pint": "^1.13",
@@ -26,10 +27,7 @@
       "App\\": "app/",
       "Database\\Factories\\": "database/factories/",
       "Database\\Seeders\\": "database/seeders/"
-    },
-    "files": [
-      "app/helpers.php"
-    ]
+    }
   },
   "autoload-dev": {
     "psr-4": {

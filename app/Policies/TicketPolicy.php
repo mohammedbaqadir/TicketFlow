@@ -2,6 +2,7 @@
 
     namespace App\Policies;
 
+    use App\Helpers\AuthHelper;
     use App\Models\Ticket;
     use App\Models\User;
     use Illuminate\Auth\Access\HandlesAuthorization;
@@ -19,7 +20,7 @@
          */
         public function viewAny( User $user ) : bool
         {
-            return userHasRole( 'admin') || userHasRole( 'agent');
+            return AuthHelper::userHasRole( 'admin') || AuthHelper::userHasRole( 'agent') ;
         }
 
 
@@ -34,11 +35,11 @@
         {
             $can_view = false;
 
-            if ( userHasRole( 'admin' ) ) {
+            if ( AuthHelper::userHasRole( 'admin' ) ) {
                 $can_view = true;
-            } elseif ( userHasRole( 'agent' ) ) {
+            } elseif ( AuthHelper::userHasRole( 'agent' ) ) {
                 $can_view = $ticket->isAssignee( $user);
-            } elseif ( userHasRole( 'employee' ) ) {
+            } elseif ( AuthHelper::userHasRole( 'employee' ) ) {
                 $can_view = $ticket->isRequestor( $user);
             }
 
@@ -54,7 +55,7 @@
          */
         public function create( User $user ) : bool
         {
-            return userHasRole( 'employee' );
+            return AuthHelper::userHasRole( 'employee' );
         }
 
 
@@ -70,9 +71,9 @@
             $can_update = false;
 
             if ( $ticket->status !== 'closed') {
-                if ( userHasRole( 'agent' ) ) {
+                if ( AuthHelper::userHasRole( 'agent' ) ) {
                     $can_update = $ticket->isAssignee( $user);
-                } elseif ( userHasRole( 'employee' ) ) {
+                } elseif ( AuthHelper::userHasRole( 'employee' ) ) {
                     $can_update = $ticket->isRequestor( $user);
                 }
             }
@@ -90,7 +91,7 @@
          */
         public function delete( User $user, Ticket $ticket ) : bool
         {
-            return userHasRole( 'admin' );
+            return AuthHelper::userHasRole( 'admin' );
         }
 
         /**
@@ -102,7 +103,7 @@
          */
         public function restore( User $user, Ticket $ticket ) : bool
         {
-            return userHasRole( 'admin' );
+            return AuthHelper::userHasRole( 'admin' );
         }
 
         /**
@@ -114,7 +115,7 @@
          */
         public function forceDelete( User $user, Ticket $ticket ) : bool
         {
-            return userHasRole( 'admin' );
+            return AuthHelper::userHasRole( 'admin' );
         }
 
     }

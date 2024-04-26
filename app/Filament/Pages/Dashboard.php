@@ -2,6 +2,7 @@
 
     namespace App\Filament\Pages;
 
+    use App\Helpers\AuthHelper;
     use Filament\Pages\Page;
 
     class Dashboard extends Page
@@ -12,7 +13,7 @@
 
         public static function canAccess() : bool
         {
-            return userHasRole( 'admin' );
+            return AuthHelper::userHasRole( 'admin');
         }
 
     }
