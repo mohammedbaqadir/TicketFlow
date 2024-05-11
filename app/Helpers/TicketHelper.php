@@ -2,6 +2,7 @@
 
     namespace App\Helpers;
 
+    use Exception;
     use GeminiAPI\Laravel\Facades\Gemini;
     use Illuminate\Support\Facades\Log;
 
@@ -78,7 +79,7 @@
 
             try {
                 $response = Gemini::generateText( $prompt );
-                return strtolower( $response );
+                return strtolower( preg_replace( '/[^a-zA-Z]/', '', $response ) );
             } catch (Exception $e) {
                 Log::error( 'API error while determining priority: ' . $e->getMessage() );
                 return 'low';

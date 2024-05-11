@@ -13,6 +13,7 @@
     use App\Livewire\AssignTicketModal;
     use App\Models\Ticket;
     use App\Models\User;
+    use App\Services\EventService;
     use App\Traits\HasCustomRecordUrl;
     use Exception;
     use Filament\Forms\Components\Placeholder;
@@ -202,6 +203,10 @@
                                     'assigned_to' => auth()->user()->id,
                                     'status' => 'in-progress'
                                 ] );
+                                EventService::createEvent( $ticket,
+                                    'Ticket assigned to ' . auth()->user()->name . '.' );
+                                EventService::createEvent( $ticket,
+                                    'Ticket status changed to `In-Progress`.' );
                             } elseif ( AuthHelper::userHasRole( 'admin' ) ) {
                                 if ( $data['action'] === 'assign_to_self' ) {
                                     // Assign ticket to the admin themselves and update status to in-progress
@@ -209,12 +214,21 @@
                                         'assigned_to' => auth()->user()->id,
                                         'status' => 'in-progress'
                                     ] );
+                                    EventService::createEvent( $ticket,
+                                        'Ticket assigned to ' . auth()->user()->name . '.' );
+                                    EventService::createEvent( $ticket,
+                                        'Ticket status changed to `In-Progress`.' );
                                 } elseif ( $data['action'] === 'assign_to_agent' ) {
                                     // Assign ticket to the selected agent and update status to in-progress
                                     $ticket->update( [
                                         'assigned_to' => $data['agent_id'],
                                         'status' => 'in-progress'
                                     ] );
+                                    EventService::createEvent( $ticket,
+                                        'Ticket assigned to ' . User::firstWhere( 'id',
+                                            $data['agent_id'] )->name ) . ' by Admin.';
+                                    EventService::createEvent( $ticket,
+                                        'Ticket status changed to `In-Progress`.' );
                                 }
                             }
 

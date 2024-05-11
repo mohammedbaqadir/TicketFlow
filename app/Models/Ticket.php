@@ -5,6 +5,7 @@
     use Illuminate\Database\Eloquent\Factories\HasFactory;
     use Illuminate\Database\Eloquent\Model;
     use Illuminate\Database\Eloquent\Relations\BelongsTo;
+    use Illuminate\Database\Eloquent\Relations\HasMany;
     use Illuminate\Database\Eloquent\SoftDeletes;
 
     class Ticket extends Model
@@ -55,6 +56,32 @@
         public function requestor() : BelongsTo
         {
             return $this->belongsTo( User::class, 'created_by' );
+        }
+
+        public function attachments()
+        {
+            return $this->hasMany( Attachment::class);
+        }
+
+        /**
+         * Get the comments for the ticket.
+         */
+        public function comments() : HasMany
+        {
+            return $this->hasMany( Comment::class );
+        }
+
+        public function solutions()
+        {
+            return $this->hasMany( Solution::class );
+        }
+
+        /**
+         * Get the events for the ticket.
+         */
+        public function events() : HasMany
+        {
+            return $this->hasMany( Event::class );
         }
 
         /**

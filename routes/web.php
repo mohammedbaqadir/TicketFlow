@@ -12,10 +12,6 @@
         [ RedirectController::class, 'redirect' ] )->name( 'home' );
 
 
-    Route::get( '/tickets/{record}/assign',
-        AssignTicketModal::class )->name( 'filament.app.resources.tickets.showAssignModal' );
-
-
     Route::get( '/dashboard', function () {
         return view( 'dashboard' );
     } )->middleware( [ 'auth', 'verified' ] )->name( 'dashboard' );

@@ -4,10 +4,13 @@
 
     use App\Filament\Resources\TicketResource;
     use App\Helpers\TicketHelper;
+    use App\Models\Ticket;
+    use App\Services\EventService;
     use Filament\Actions;
     use Filament\Forms\Components\Textarea;
     use Filament\Forms\Components\TextInput;
     use Filament\Resources\Pages\CreateRecord;
+    use Illuminate\Database\Eloquent\Model;
 
     /**
      * Class CreateTicket
@@ -55,4 +58,21 @@
 
             return $data;
         }
+
+
+        /**
+         * After creating a ticket, log the event.
+         *
+         * @param  Ticket  $record
+         * @return void
+         */
+        protected function afterCreate( Model $record ) : void
+        {
+            // Ensure the record is an instance of Ticket
+            if ( $record instanceof Ticket ) {
+                EventService::createEvent( $record, 'Ticket was created' );
+            }
+        }
+
+
     }
