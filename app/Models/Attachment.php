@@ -9,7 +9,7 @@
     class Attachment extends Model
     {
 
-        protected $fillable = [ 'ticket_id', 'user_id', 'file_path' ];
+        protected $fillable = [ 'ticket_id', 'user_id', 'solution_id', 'file_path' ];
 
         /**
          * Get the ticket that owns the attachment.

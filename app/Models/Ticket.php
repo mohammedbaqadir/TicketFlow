@@ -7,9 +7,12 @@
     use Illuminate\Database\Eloquent\Relations\BelongsTo;
     use Illuminate\Database\Eloquent\Relations\HasMany;
     use Illuminate\Database\Eloquent\SoftDeletes;
+    use Spatie\MediaLibrary\HasMedia;
+    use Spatie\MediaLibrary\InteractsWithMedia;
 
-    class Ticket extends Model
+    class Ticket extends Model implements HasMedia
     {
+        use InteractsWithMedia;
 
         /**
          * The attributes that are mass assignable.
@@ -25,6 +28,21 @@
             'assigned_to',
             'timeout_at'
         ];
+
+        public function registerMediaCollections() : void
+        {
+            $this->addMediaCollection( 'ticket_attachments' )
+                ->multipleFiles()
+                ->useDisk( 'public' );
+        }
+
+
+        protected $casts = [
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'timeout_at' => 'datetime',
+        ];
+
 
         /**
          * Determine if the given user is the requestor of the ticket.
@@ -58,10 +76,7 @@
             return $this->belongsTo( User::class, 'created_by' );
         }
 
-        public function attachments()
-        {
-            return $this->hasMany( Attachment::class);
-        }
+
 
         /**
          * Get the comments for the ticket.

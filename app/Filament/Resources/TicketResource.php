@@ -10,10 +10,9 @@
     use App\Filament\Resources\TicketResource\RelationManagers\RequestorRelationManager;
     use App\Helpers\AuthHelper;
     use App\Helpers\NavigationHelper;
-    use App\Livewire\AssignTicketModal;
     use App\Models\Ticket;
     use App\Models\User;
-    use App\Services\EventService;
+    use App\Services\TicketService;
     use App\Traits\HasCustomRecordUrl;
     use Exception;
     use Filament\Forms\Components\Placeholder;
@@ -23,7 +22,6 @@
     use Filament\Tables\Actions\Action;
     use Filament\Tables\Actions\BulkActionGroup;
     use Filament\Tables\Actions\DeleteBulkAction;
-    use Filament\Tables\Actions\EditAction;
     use Filament\Tables\Columns\TextColumn;
     use Filament\Tables\Filters\SelectFilter;
     use Filament\Tables\Table;
@@ -68,57 +66,16 @@
          */
         public static function getNavigationItems() : array
         {
-            if ( AuthHelper::userHasRole( 'agent' ) ) {
-                $hasOngoingTickets = Ticket::where( 'assigned_to', auth()->user()->id )
-                    ->whereIn( 'status', [ 'in-progress', 'awaiting-acceptance' ] )
-                    ->exists();
+            $navigationItems = NavigationHelper::getNavigationItemsForUser();
 
-                if ( $hasOngoingTickets ) {
-                    app( 'redirect' )->to( '/tickets?tableFilters[assigned_to][value]=' . auth()->user()->id )->send();
-                }
+            // Check for redirect in the returned navigation items
+            if ( isset( $navigationItems['redirect'] ) ) {
+                // Perform redirect
+                app( 'redirect' )->to( $navigationItems['redirect'] )->send();
             }
 
-            return [
-                NavigationItem::make( 'Open' )
-                    ->url( '/app/tickets?tableFilters[status][value]=open' )
-                    ->icon( 'heroicon-o-ticket' )
-                    ->group( 'Tickets' )
-                    ->isActiveWhen( fn() => NavigationHelper::isActiveNavigationItem( 'app/tickets',
-                        [ 'status' => 'open' ] ) )
-                    ->badge( fn() => Ticket::isOpen()->count() ),
-
-                NavigationItem::make( 'In-Progress' )
-                    ->url( '/app/tickets?tableFilters[status][value]=in-progress' )
-                    ->icon( 'heroicon-o-ticket' )
-                    ->group( 'Tickets' )
-                    ->isActiveWhen( fn() => NavigationHelper::isActiveNavigationItem( 'app/tickets',
-                        [ 'status' => 'in-progress' ] ) )
-                    ->badge( fn() => Ticket::isInProgress()->count() ),
-
-                NavigationItem::make( 'Awaiting-Acceptance' )
-                    ->url( '/app/tickets?tableFilters[status][value]=awaiting-acceptance' )
-                    ->icon( 'heroicon-o-ticket' )
-                    ->group( 'Tickets' )
-                    ->isActiveWhen( fn() => NavigationHelper::isActiveNavigationItem( 'app/tickets',
-                        [ 'status' => 'awaiting-acceptance' ] ) )
-                    ->badge( fn() => Ticket::isAwaitingAcceptance()->count() ),
-
-                NavigationItem::make( 'Elevated' )
-                    ->url( '/app/tickets?tableFilters[status][value]=elevated' )
-                    ->icon( 'heroicon-o-ticket' )
-                    ->group( 'Tickets' )
-                    ->isActiveWhen( fn() => NavigationHelper::isActiveNavigationItem( 'app/tickets',
-                        [ 'status' => 'elevated' ] ) )
-                    ->badge( fn() => Ticket::isElevated()->count() ),
-
-                NavigationItem::make( 'Closed' )
-                    ->url( '/app/tickets?tableFilters[status][value]=closed' )
-                    ->icon( 'heroicon-o-ticket' )
-                    ->group( 'Tickets' )
-                    ->isActiveWhen( fn() => NavigationHelper::isActiveNavigationItem( 'app/tickets',
-                        [ 'status' => 'closed' ] ) )
-                    ->badge( fn() => Ticket::isClosed()->count() ),
-            ];
+            // Filter out any non-navigation item arrays
+            return array_filter( $navigationItems, fn( $item ) => $item instanceof NavigationItem );
         }
 
         /**
@@ -130,6 +87,7 @@
          */
         public static function table( Table $table ) : Table
         {
+            $user = auth()->user();
             return $table
                 ->columns( [
                     TextColumn::make( 'id' )->sortable(),
@@ -137,7 +95,7 @@
                     TextColumn::make( 'description' )->sortable()->searchable(),
                     TextColumn::make( 'status' )->sortable()->searchable(),
                     TextColumn::make( 'priority' )->sortable()->searchable(),
-                    TextColumn::make( 'creator.name' )->label( 'Created By' )->sortable()->searchable(),
+                    TextColumn::make( 'requestor.name' )->label( 'Created By' )->sortable()->searchable(),
                     TextColumn::make( 'assignee.name' )->label( 'Assigned To' )->sortable()->searchable(),
                     TextColumn::make( 'created_at' )->sortable()->dateTime(),
                     TextColumn::make( 'timeout_at' )->sortable()->dateTime(),
@@ -162,82 +120,43 @@
                 ->actions( [
                     Action::make( 'assignTicket' )
                         ->label( 'Assign Ticket' )
-                        // Show the action only if the ticket is not assigned
                         ->visible( fn( Ticket $record ) => $record->assigned_to === null )
                         ->form( function ( Ticket $record ) : array {
+                            $formSchema = [];
+
                             if ( AuthHelper::userHasRole( 'agent' ) ) {
-                                return [
-                                    // Confirmation for agent to assign the ticket to themselves
-                                    Placeholder::make( 'confirm' )
-                                        ->content( 'Assign this ticket to yourself?' ),
-                                ];
+                                $formSchema[] = Placeholder::make( 'confirm' )
+                                    ->content( 'Assign this ticket to yourself?' );
                             }
 
                             if ( AuthHelper::userHasRole( 'admin' ) ) {
-                                return [
-                                    // Options for admin to assign the ticket to themselves or another agent
-                                    Select::make( 'action' )
-                                        ->label( 'Action' )
-                                        ->options( [
-                                            'assign_to_self' => 'Assign to Myself',
-                                            'assign_to_agent' => 'Assign to Agent',
-                                        ] )
-                                        ->reactive()
-                                        ->required(),
-                                    Select::make( 'agent_id' )
-                                        ->label( 'Assign to Agent' )
-                                        ->options( User::isAgent()->pluck( 'name', 'id' ) )
-                                        ->visible( fn( $get ) => $get( 'action' ) === 'assign_to_agent' )
-                                        ->required( fn( $get ) => $get( 'action' ) === 'assign_to_agent' ),
-                                ];
+                                $formSchema[] = Select::make( 'action' )
+                                    ->label( 'Action' )
+                                    ->options( [
+                                        'assign_to_self' => 'Assign to Myself',
+                                        'assign_to_agent' => 'Assign to Agent',
+                                    ] )
+                                    ->reactive()
+                                    ->required();
+                                $formSchema[] = Select::make( 'agent_id' )
+                                    ->label( 'Assign to Agent' )
+                                    ->options( User::isAgent()->pluck( 'name', 'id' ) )
+                                    ->visible( fn( $get ) => $get( 'action' ) === 'assign_to_agent' )
+                                    ->required( fn( $get ) => $get( 'action' ) === 'assign_to_agent' );
                             }
 
-                            return [];
+                            return $formSchema;
                         } )
                         ->action( function ( array $data, Ticket $record ) {
-                            $ticket = Ticket::findOrFail( $record->id );
+                            ( new TicketService() )->assignTicket( $record, $data );
 
-                            if ( AuthHelper::userHasRole( 'agent' ) ) {
-                                // Assign ticket to the agent themselves and update status to in-progress
-                                $ticket->update( [
-                                    'assigned_to' => auth()->user()->id,
-                                    'status' => 'in-progress'
-                                ] );
-                                EventService::createEvent( $ticket,
-                                    'Ticket assigned to ' . auth()->user()->name . '.' );
-                                EventService::createEvent( $ticket,
-                                    'Ticket status changed to `In-Progress`.' );
-                            } elseif ( AuthHelper::userHasRole( 'admin' ) ) {
-                                if ( $data['action'] === 'assign_to_self' ) {
-                                    // Assign ticket to the admin themselves and update status to in-progress
-                                    $ticket->update( [
-                                        'assigned_to' => auth()->user()->id,
-                                        'status' => 'in-progress'
-                                    ] );
-                                    EventService::createEvent( $ticket,
-                                        'Ticket assigned to ' . auth()->user()->name . '.' );
-                                    EventService::createEvent( $ticket,
-                                        'Ticket status changed to `In-Progress`.' );
-                                } elseif ( $data['action'] === 'assign_to_agent' ) {
-                                    // Assign ticket to the selected agent and update status to in-progress
-                                    $ticket->update( [
-                                        'assigned_to' => $data['agent_id'],
-                                        'status' => 'in-progress'
-                                    ] );
-                                    EventService::createEvent( $ticket,
-                                        'Ticket assigned to ' . User::firstWhere( 'id',
-                                            $data['agent_id'] )->name ) . ' by Admin.';
-                                    EventService::createEvent( $ticket,
-                                        'Ticket status changed to `In-Progress`.' );
-                                }
-                            }
-
-                            return redirect()->route( 'filament.app.resources.tickets.view', $ticket );
+                            return redirect()->route( 'filament.app.resources.tickets.view', $record );
                         } )
                         ->modalHeading( fn(
                         ) => AuthHelper::userHasRole( 'agent' ) ? 'Confirm Assignment' : 'Assign Ticket' )
                         ->modalSubmitActionLabel( 'Confirm' )
                         ->modalWidth( 'lg' ),
+
                 ] )
                 ->bulkActions( [
                     BulkActionGroup::make( [
@@ -246,11 +165,6 @@
                 ] );
         }
 
-        /**
-         * Get the relation managers for the resource.
-         *
-         * @return array
-         */
         public static function getRelations() : array
         {
             return [

@@ -25,7 +25,7 @@ use Livewire\Component;
                 'content' => $this->content,
             ] );
 
-            EventService::createEvent( $this->ticket, 'Comment added: ' . $this->content );
+            EventService::createEvent( $this->ticket->id, auth()->id(), 'Comment added: ' . $this->content );
         }
 
         public function render()

@@ -7,7 +7,7 @@
 
     class Event extends Model
     {
-        protected $fillable = [ 'ticket_id', 'user_id', 'event_type', 'details' ];
+        protected $fillable = [ 'ticket_id', 'user_id', 'description' ];
 
         /**
          * Get the ticket that owns the event.

@@ -7,33 +7,27 @@
     use Illuminate\Support\Facades\Auth;
     use InvalidArgumentException;
 
+    /**
+     * Class EventService
+     *
+     * Provides services related to event operations.
+     */
     class EventService
     {
         /**
-         * Create an event.
+         * Create an event for a ticket.
          *
-         * @param  int|Ticket  $ticket
+         * @param  int  $ticketId
          * @param  string  $description
          * @param  int|null  $userId
          * @return Event
-         * @throws InvalidArgumentException
          */
-        public static function createEvent( Ticket|int $ticket, string $description, ?int $userId = null ) : Event
+        public static function createEvent( int $ticketId, int $userId, string $description ) : Event
         {
-            // Ensure $ticket is either a Ticket instance or an integer ID
-            if ( !( $ticket instanceof Ticket ) && !\is_int( $ticket ) ) {
-                throw new InvalidArgumentException( 'Ticket must be a Ticket instance or an integer ID' );
-            }
-
-            $ticketId = $ticket instanceof Ticket ? $ticket->id : $ticket;
-
-
             return Event::create( [
                 'ticket_id' => $ticketId,
-                'user_id' => $userId ?? auth()->id(),  // Use userId if provided, otherwise auth()->id()
+                'user_id' => $userId,
                 'description' => $description,
             ] );
         }
-
-
     }

@@ -1,26 +1,34 @@
 <?php
 
-namespace App\Models;
+    namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
+    use Illuminate\Database\Eloquent\Model;
+    use Spatie\MediaLibrary\HasMedia;
+    use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Solution extends Model
-{
-    protected $fillable = [ 'ticket_id', 'user_id', 'content', 'resolved' ];
-
-    public function ticket()
+    class Solution extends Model implements HasMedia
     {
-        return $this->belongsTo( Ticket::class );
-    }
+        use InteractsWithMedia;
 
-    public function user()
-    {
-        return $this->belongsTo( User::class );
-    }
+        protected $fillable = [ 'ticket_id', 'user_id', 'content', 'resolved' ];
 
-    public function attachments()
-    {
-        return $this->hasMany( Attachment::class );
+        public function registerMediaCollections() : void
+        {
+            $this->addMediaCollection( 'solution_attachments' )
+                ->multipleFiles()
+                ->useDisk( 'public' );
+        }
+
+        public function ticket()
+        {
+            return $this->belongsTo( Ticket::class );
+        }
+
+        public function user()
+        {
+            return $this->belongsTo( User::class );
+        }
+
+
     }
-}

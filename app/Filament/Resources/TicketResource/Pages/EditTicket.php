@@ -4,7 +4,9 @@
 
     use App\Filament\Resources\TicketResource;
     use App\Helpers\AuthHelper;
+    use App\Helpers\FormHelper;
     use App\Helpers\TicketHelper;
+    use App\Services\TicketService;
     use Filament\Actions;
     use Filament\Actions\DeleteAction;
     use Filament\Forms\Components\Select;
@@ -33,22 +35,19 @@
          */
         protected function getFormSchema() : array
         {
-            $isEmployee = AuthHelper::userHasRole( 'employee' );
-            $isAgent = AuthHelper::userHasRole( 'agent' );
-
             return [
                 TextInput::make( 'title' )
                     ->maxLength( 255 )
-                    ->visible( $isEmployee ),
+                    ->visible( AuthHelper::userHasRole( 'employee' ) ),
                 Textarea::make( 'description' )
-                    ->visible( $isEmployee ),
+                    ->visible( AuthHelper::userHasRole( 'employee' ) ),
                 Select::make( 'priority' )
                     ->options( [
                         'low' => 'Low',
                         'medium' => 'Medium',
                         'high' => 'High',
                     ] )
-                    ->visible( $isAgent ),
+                    ->visible( AuthHelper::userHasRole( 'agent' ) ),
             ];
         }
 
@@ -60,14 +59,7 @@
          */
         protected function mutateFormDataBeforeSave( array $data ) : array
         {
-            if ( AuthHelper::userHasRole( 'agent' ) ) {
-                $data['timeout_at'] = now()->addHours( TicketHelper::determineTimeout( $data['priority'] ) );
-            } else {
-                $data['priority'] = TicketHelper::determinePriority( $data['title'], $data['description'] );
-                $data['timeout_at'] = now()->addHours( TicketHelper::determineTimeout( $data['priority'] ) );
-            }
-
-            return $data;
+            return FormHelper::handleEditTicketFormData( $data );
         }
 
         /**

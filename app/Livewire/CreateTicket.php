@@ -46,8 +46,7 @@ namespace App\Livewire;
                     'file_path' => $filePath,
                 ] );
             }
-
-            EventService::createEvent( $ticket, 'Ticket was created' );
+            EventService::createEvent( $ticket->id, auth()->id(), 'Ticket was created');
 
             session()->flash( 'success', 'Ticket created successfully.' );
             $this->reset();
