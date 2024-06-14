@@ -4,6 +4,8 @@
 
     use Illuminate\Database\Eloquent\Factories\HasFactory;
     use Illuminate\Database\Eloquent\Model;
+    use Spatie\Activitylog\LogOptions;
+    use Spatie\Activitylog\Traits\LogsActivity;
     use Spatie\MediaLibrary\HasMedia;
     use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -13,12 +15,6 @@
 
         protected $fillable = [ 'ticket_id', 'user_id', 'content', 'resolved' ];
 
-        public function registerMediaCollections() : void
-        {
-            $this->addMediaCollection( 'solution_attachments' )
-                ->multipleFiles()
-                ->useDisk( 'public' );
-        }
 
         public function ticket()
         {
@@ -28,6 +24,31 @@
         public function user()
         {
             return $this->belongsTo( User::class );
+        }
+
+        public function registerMediaCollections() : void
+        {
+            $this->addMediaCollection( 'solution_attachments' );
+        }
+
+        public function markValid()
+        {
+            $this->update( [ 'resolved' => true ] );
+            activity()
+                ->on( $this->ticket )
+                ->by( $this->ticket->requestor )
+                ->log( 'Solution resolved the ticket' );
+            $this->ticket->update( [ 'status' => 'closed' ] );
+        }
+
+        public function markInvalid()
+        {
+            $this->update( [ 'resolved' => false ] );
+            activity()
+                ->on( $this->ticket )
+                ->by( $this->ticket->requestor )
+                ->log( "Solution didn't resolve the ticket" );
+            $this->ticket->update( [ 'status' => 'in-progress' ] );
         }
 
 

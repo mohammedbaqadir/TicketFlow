@@ -26,9 +26,9 @@
 
                 // Redirect to assigned tickets if there are ongoing tickets
                 if ( $hasOngoingTickets ) {
-                    return [
-                        'redirect' => url( '/tickets?tableFilters[assigned_to][value]=' . $user->id ),
-                    ];
+//                    return [
+//                        'redirect' => url( 'app/tickets?tableFilters[assigned_to][value]=' . $user->id ),
+//                    ];
                 }
             }
 

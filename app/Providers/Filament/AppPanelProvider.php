@@ -20,6 +20,7 @@
     use Illuminate\Session\Middleware\StartSession;
     use Illuminate\View\Middleware\ShareErrorsFromSession;
     use App\Filament\Resources\UserResource;
+    use SolutionForest\FilamentSimpleLightBox\SimpleLightBoxPlugin;
 
     class AppPanelProvider extends PanelProvider
     {

@@ -10,8 +10,10 @@
     use Filament\Actions;
     use Filament\Actions\DeleteAction;
     use Filament\Forms\Components\Select;
+    use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
     use Filament\Forms\Components\Textarea;
     use Filament\Forms\Components\TextInput;
+    use Filament\Forms\Form;
     use Filament\Resources\Pages\EditRecord;
 
     /**
@@ -28,18 +30,19 @@
          */
         protected static string $resource = TicketResource::class;
 
-        /**
-         * Get the form schema for editing a ticket.
-         *
-         * @return array
-         */
-        protected function getFormSchema() : array
+        function form( Form $form ) : Form
         {
-            return [
+            return $form->schema( [
                 TextInput::make( 'title' )
                     ->maxLength( 255 )
                     ->visible( AuthHelper::userHasRole( 'employee' ) ),
                 Textarea::make( 'description' )
+                    ->visible( AuthHelper::userHasRole( 'employee' ) ),
+                SpatieMediaLibraryFileUpload::make( 'attachments' )
+                    ->collection( 'ticket_attachments' )
+                    ->multiple()
+                    ->label( 'Attachments' )
+                    ->acceptedFileTypes( [ 'image/jpeg', 'image/png', 'image/gif' ] )
                     ->visible( AuthHelper::userHasRole( 'employee' ) ),
                 Select::make( 'priority' )
                     ->options( [
@@ -48,7 +51,7 @@
                         'high' => 'High',
                     ] )
                     ->visible( AuthHelper::userHasRole( 'agent' ) ),
-            ];
+            ] );
         }
 
         /**

@@ -7,12 +7,32 @@
     use Illuminate\Database\Eloquent\Relations\BelongsTo;
     use Illuminate\Database\Eloquent\Relations\HasMany;
     use Illuminate\Database\Eloquent\SoftDeletes;
+    use Spatie\Activitylog\LogOptions;
+    use Spatie\Activitylog\Traits\LogsActivity;
     use Spatie\MediaLibrary\HasMedia;
     use Spatie\MediaLibrary\InteractsWithMedia;
 
     class Ticket extends Model implements HasMedia
     {
         use InteractsWithMedia;
+        use LogsActivity;
+
+        /**
+         * Configure the activity log options for the Ticket model.
+         *
+         * @return LogOptions
+         */
+        public function getActivitylogOptions() : LogOptions
+        {
+            return LogOptions::defaults()
+                ->useLogName( 'ticket' )
+                ->logOnly( [ 'status' ] )
+                ->logOnlyDirty()
+                ->setDescriptionForEvent( function ( string $eventName, Model $model ) {
+                    return "Ticket is {$this->status}";
+                } );
+        }
+
 
         /**
          * The attributes that are mass assignable.
@@ -31,9 +51,7 @@
 
         public function registerMediaCollections() : void
         {
-            $this->addMediaCollection( 'ticket_attachments' )
-                ->multipleFiles()
-                ->useDisk( 'public' );
+            $this->addMediaCollection( 'ticket_attachments' );
         }
 
 
@@ -77,7 +95,6 @@
         }
 
 
-
         /**
          * Get the comments for the ticket.
          */
@@ -91,13 +108,6 @@
             return $this->hasMany( Solution::class );
         }
 
-        /**
-         * Get the events for the ticket.
-         */
-        public function events() : HasMany
-        {
-            return $this->hasMany( Event::class );
-        }
 
         /**
          * Get the user to whom the ticket is assigned.
@@ -123,6 +133,7 @@
         {
             return $query->where( 'status', 'awaiting-acceptance' );
         }
+
         public function scopeIsElevated( $query )
         {
             return $query->where( 'status', 'elevated' );
@@ -132,4 +143,6 @@
         {
             return $query->where( 'status', 'closed' );
         }
+
+
     }

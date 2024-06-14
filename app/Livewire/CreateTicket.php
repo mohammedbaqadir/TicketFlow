@@ -6,7 +6,6 @@ namespace App\Livewire;
     use Livewire\WithFileUploads;
     use App\Models\Ticket;
     use App\Models\Attachment;
-    use App\Services\EventService;
     use Illuminate\Support\Facades\Auth;
 
     class CreateTicket extends Component
@@ -46,7 +45,7 @@ namespace App\Livewire;
                     'file_path' => $filePath,
                 ] );
             }
-            EventService::createEvent( $ticket->id, auth()->id(), 'Ticket was created');
+
 
             session()->flash( 'success', 'Ticket created successfully.' );
             $this->reset();

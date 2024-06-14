@@ -5,7 +5,6 @@
     use App\Models\Comment;
     use App\Models\Solution;
     use App\Models\Ticket;
-    use App\Services\EventService;
     use Livewire\Component;
 
     class TicketTimeline extends Component
@@ -28,8 +27,6 @@
         {
             $solution->update( [ 'resolved' => true ] );
             $solution->ticket->update( [ 'status' => 'closed' ] );
-            EventService::createEvent( $solution->ticket->id, auth()->id(),
-                'Solution successfully resolved the issue, ticket closed' );
 
             session()->flash( 'message', 'Solution marked as valid and ticket closed.' );
         }
@@ -44,7 +41,6 @@
         {
             $solution->update( [ 'resolved' => false ] );
             $solution->ticket->update( [ 'status' => 'in-progress' ] );
-            EventService::createEvent( $solution->ticket->id, 'Ticket status changed to `In-Progress`.' );
 
             session()->flash( 'message', 'Solution marked as invalid.' );
         }

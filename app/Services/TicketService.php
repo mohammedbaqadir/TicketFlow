@@ -2,12 +2,14 @@
 
     namespace App\Services;
 
+    use App\Models\Solution;
     use App\Models\Ticket;
     use App\Models\User;
     use App\Helpers\AuthHelper;
     use Exception;
     use GeminiAPI\Laravel\Facades\Gemini;
     use Illuminate\Support\Facades\Log;
+    use Spatie\Activitylog\Models\Activity;
 
     class TicketService
     {
@@ -18,7 +20,7 @@
          * @param  array  $data
          * @return Ticket
          */
-        public function assignTicket( Ticket $ticket, array $data ) : Ticket
+        public function assignTicket( Ticket $ticket, array $data ) : void
         {
             $user = auth()->user();
 
@@ -34,8 +36,6 @@
                     $this->assignToUser( $ticket, $agent, 'Admin' );
                 }
             }
-
-            return $ticket;
         }
 
         /**
@@ -48,15 +48,15 @@
          */
         private function assignToUser( Ticket $ticket, User $user, ?string $assignedBy = null ) : void
         {
-            $ticket->update( [
-                'assigned_to' => $user->id,
-                'status' => 'in-progress'
-            ] );
-
+            $ticket->update( ['assigned_to' => $user->id] );
             $assignedByText = $assignedBy ? " by $assignedBy" : '';
 
-            EventService::createEvent( $ticket->id, auth()->id(), "Ticket assigned to {$user->name}.$assignedByText" );
-            EventService::createEvent( $ticket->id, auth()->id(), 'Ticket status changed to `In-Progress`.' );
+            activity()
+                ->on( $ticket )
+                ->by( $user)
+                ->log( "Ticket assigned to {$user->name}.{$assignedByText}");
+
+            $ticket->update([ 'status' => 'in-progress']);
         }
 
         /**
@@ -65,15 +65,44 @@
          * @param  Ticket  $ticket
          * @return void
          */
-        public function unassignTicket( Ticket $ticket ) : void
+        public function unassignTicket( Ticket $ticket, User $user ) : void
         {
-            $ticket->update( [
-                'assigned_to' => null,
-                'status' => 'open',
+            $ticket->update( ['assigned_to' => null] );
+            activity()
+                ->on( $ticket )
+                ->by( $user )
+                ->log( "{$user->name} un-assigned from ticket" );
+
+            $ticket->update( [ 'status' => 'open' ] );
+        }
+
+        /**
+         * Submit a solution for a ticket.
+         *
+         * @param  Ticket  $ticket
+         * @param  array  $data
+         * @return void
+         */
+        public function submitSolution( Ticket $ticket, array $data )
+        {
+            $assignee = $ticket->assignee;
+            $solution = Solution::create( [
+                'ticket_id' => $ticket->id,
+                'user_id' => $assignee->id,
+                'content' => $data['content'],
             ] );
 
-            EventService::createEvent( $ticket->id, auth()->id(), 'Ticket is un-assigned' );
-            EventService::createEvent( $ticket->id, auth()->id(), 'Ticket status changed to `Open`.' );
+            if ( isset( $data['solution_attachments'] ) ) {
+                foreach ( $data['solution_attachments'] as $file ) {
+                    $solution->addMedia( $file )->toMediaCollection( 'solution_attachments' );
+                }
+            }
+            activity()
+                ->on( $ticket )
+                ->by( $assignee )
+                ->log( 'Solution submitted by ' . $assignee );
+
+            $ticket->update( [ 'status' => 'awaiting-acceptance' ] );
         }
 
         /**

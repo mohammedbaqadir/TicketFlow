@@ -6,6 +6,7 @@
     use App\Filament\Resources\TicketResource\Pages\EditTicket;
     use App\Filament\Resources\TicketResource\Pages\ListTickets;
     use App\Filament\Resources\TicketResource\Pages\ViewTicket;
+    use App\Filament\Resources\TicketResource\Pages\ViewTicketActivities;
     use App\Filament\Resources\TicketResource\RelationManagers\AssigneeRelationManager;
     use App\Filament\Resources\TicketResource\RelationManagers\RequestorRelationManager;
     use App\Helpers\AuthHelper;
@@ -168,11 +169,15 @@
         public static function getRelations() : array
         {
             return [
-                RequestorRelationManager::class,
-                AssigneeRelationManager::class,
+//                RequestorRelationManager::class,
+//                AssigneeRelationManager::class,
             ];
         }
 
+        public static function getBreadcrumb() : string
+        {
+            return '';
+        }
         /**
          * Get the pages for the resource.
          *

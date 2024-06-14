@@ -4,7 +4,6 @@ namespace App\Livewire;
 
 use App\Models\Comment;
 use App\Models\Ticket;
-use App\Services\EventService;
 use Livewire\Component;
 
     class TicketComments extends Component
@@ -25,7 +24,6 @@ use Livewire\Component;
                 'content' => $this->content,
             ] );
 
-            EventService::createEvent( $this->ticket->id, auth()->id(), 'Comment added: ' . $this->content );
         }
 
         public function render()

@@ -4,17 +4,11 @@
 
     use App\Filament\Resources\TicketResource;
     use App\Helpers\FormHelper;
-    use App\Models\Ticket;
-    use App\Services\EventService;
-    use App\Services\TicketService;
     use Filament\Actions;
     use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
     use Filament\Forms\Components\Textarea;
     use Filament\Forms\Components\TextInput;
-    use Filament\Forms\Concerns\InteractsWithForms;
-    use Filament\Forms\Contracts\HasForms;
     use Filament\Resources\Pages\CreateRecord;
-    use Illuminate\Database\Eloquent\Model;
 
     /**
      * Class CreateTicket
@@ -47,7 +41,6 @@
                     ->collection( 'ticket_attachments' )
                     ->multiple()
                     ->label( 'Attachments' )
-                    ->preserveFilenames(),
             ];
         }
 
@@ -72,12 +65,6 @@
         {
             return [
                 Actions\CreateAction::make()
-                    ->after( function () {
-                        // Runs after the form fields are saved to the database.
-                        if ( $this->record instanceof Ticket ) {
-                            EventService::createEvent( $this->record->id, auth()->id(), 'Ticket was created' );
-                        }
-                    } )
             ];
         }
 

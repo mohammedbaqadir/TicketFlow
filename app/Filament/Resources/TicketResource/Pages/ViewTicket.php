@@ -2,14 +2,16 @@
 
     namespace App\Filament\Resources\TicketResource\Pages;
 
-    use App\Filament\Resources\TicketResource\Widgets\TicketTimelineWidget;
-    use App\Models\Solution;
-    use App\Services\EventService;
+    use App\Livewire\SolutionEntry;
     use Filament\Actions\Action;
+    use Filament\Actions\EditAction;
     use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
     use Filament\Forms\Components\Textarea;
-    use Filament\Infolists\Components\ImageEntry;
-    use Filament\Infolists\Components\SpatieMediaLibraryImageEntry;
+    use Filament\Infolists\Components\Livewire;
+    use Filament\Infolists\Components\Section;
+    use Filament\Infolists\Components\Split;
+    use Filament\Infolists\Components\Tabs;
+    use Filament\Infolists\Components\Tabs\Tab;
     use Filament\Notifications\Notification;
     use App\Filament\Resources\TicketResource;
     use App\Models\Ticket;
@@ -17,6 +19,9 @@
     use Filament\Infolists\Components\TextEntry;
     use Filament\Infolists\Infolist;
     use Filament\Resources\Pages\ViewRecord;
+    use Illuminate\Contracts\Support\Htmlable;
+    use Illuminate\Contracts\View\View;
+    use Njxqlus\Filament\Components\Infolists\LightboxSpatieMediaLibraryImageEntry;
 
 
     /**
@@ -31,6 +36,14 @@
          */
         protected static string $resource = TicketResource::class;
 
+        /**
+         * @return string|null
+         */
+        public function getHeading() : string|Htmlable
+        {
+            return $this->record->title;
+        }
+
 
         /**
          * Define the infolist schema for displaying ticket details.
@@ -41,41 +54,47 @@
         public function infolist( Infolist $infolist ) : Infolist
         {
             return $infolist->schema( [
-                TextEntry::make( 'id' )->label( 'Ticket ID' ),
-                TextEntry::make( 'title' )->label( 'Title' ),
-                TextEntry::make( 'description' )->label( 'Description' ),
-                TextEntry::make( 'status' )->label( 'Status' ),
-                TextEntry::make( 'priority' )->label( 'Priority' ),
-                TextEntry::make( 'requestor.name' )->label( 'Created By' ),
-                TextEntry::make( 'assignee.name' )->label( 'Assigned To' ),
-                TextEntry::make( 'created_at' )->label( 'Created At' )->dateTime(),
-                TextEntry::make( 'updated_at' )->label( 'Updated At' )->dateTime(),
-                SpatieMediaLibraryImageEntry::make( 'attachments' )
-                    ->collection( 'ticket_attachments' )
-                    ->label( 'Attachments' )
-                    ->conversion( 'thumb' )
-                    ->image(),
-                TextEntry::make( 'attachments' )
-                    ->collection( 'ticket_attachments' )
-                    ->label( 'Other Attachments' )
-                    ->displayUsing( fn( $attachments ) => $this->formatAttachments( $attachments ) )
-                    ->columnSpan( 'full' ),
-
+                Split::make( [
+                    Section::make( [
+                        Tabs::make( 'Tabs' )
+                            ->tabs( [
+                                Tab::make( 'Details' )
+                                    ->icon( 'heroicon-o-question-mark-circle' )
+                                    ->schema( [
+                                        TextEntry::make( 'description' )->label( 'Description' ),
+                                        TextEntry::make( 'status' )->label( 'Status' ),
+                                        TextEntry::make( 'priority' )->label( 'Priority' ),
+                                        TextEntry::make( 'requestor.name' )->label( 'Created By' ),
+                                        TextEntry::make( 'assignee.name' )->label( 'Assigned To' ),
+                                    ] ),
+                                Tab::make( 'Attachments' )
+                                    ->icon( 'heroicon-o-photo' )
+                                    ->schema( [
+                                        LightboxSpatieMediaLibraryImageEntry::make( 'attachments' )
+                                            ->collection( 'ticket_attachments' )
+                                            ->label( 'Attachments' )->conversion( 'thumb' )->columnSpan( 'full' )
+                                    ] ),
+                                Tab::make( 'Solutions' )
+                                    ->icon( 'heroicon-o-document-text' )
+                                    ->badge( $this->record->solutions()->count() )
+                                    ->schema( function () {
+                                        $solutions = $this->record->solutions()->get()->toArray();
+                                        $solution_entries = [];
+                                        foreach ( $solutions as $solution ) {
+                                            $solution_entries[] = Livewire::make( SolutionEntry::class,
+                                                [ 'solution' => $solution ] );
+                                        }
+                                        return $solution_entries;
+                                    } ),
+                            ] )
+                    ] )->grow( true ),
+                    Section::make( [
+                        TextEntry::make( 'id' )->label( 'Ticket ID' ),
+                        TextEntry::make( 'created_at' )->label( 'Created At' )->dateTime(),
+                        TextEntry::make( 'updated_at' )->label( 'Updated At' )->dateTime(),
+                    ] )->grow( false )
+                ] )->from( 'md' )->columnSpanFull()
             ] );
-        }
-
-        /**
-         * Format attachments for display
-         *
-         * @param $attachments
-         * @return string
-         */
-        protected function formatAttachments( $attachments ) : string
-        {
-            return collect( $attachments )->filter( fn( $media ) => strpos( $media->mime_type, 'image' ) !== 0 )
-                ->map( fn( $media
-                ) => "<a href='{$media->getUrl()}' target='_blank' class='text-blue-500 underline'>{$media->file_name}</a>" )
-                ->implode( ', ' );
         }
 
         /**
@@ -92,7 +111,7 @@
                     ->visible( fn() => $this->record->isAssignee( auth()->user() ) )
                     ->action( function () {
                         if ( $this->record instanceof Ticket ) {
-                            ( new TicketService() )->unassignTicket( $this->record );
+                            ( new TicketService() )->unassignTicket( $this->record, $this->record->assignee() );
 
                             Notification::make()
                                 ->title( 'Success' )
@@ -120,24 +139,7 @@
                             ->preserveFilenames(),
                     ] )
                     ->action( function ( array $data ) {
-                        $solution = Solution::create( [
-                            'ticket_id' => $this->record->id,
-                            'user_id' => auth()->id(),
-                            'content' => $data['content'],
-                        ] );
-
-                        if ( isset( $data['solution_attachments'] ) ) {
-                            foreach ( $data['solution_attachments'] as $file ) {
-                                $solution->addMedia( $file )->toMediaCollection( 'solution_attachments' );
-                            }
-                        }
-
-                        $this->record->update( [ 'status' => 'awaiting-acceptance' ] );
-                        EventService::createEvent( $this->record->id, auth()->id(),
-                            'Solution submitted by ' . auth()->user()->name );
-                        EventService::createEvent( $this->record->id, auth()->id(),
-                            'Ticket status changed to `Awaiting Acceptance`.' );
-
+                        ( new TicketService() )->submitSolution( $this->record, $data );
                         Notification::make()
                             ->title( 'Success' )
                             ->body( 'Solution submitted successfully.' )
@@ -147,22 +149,11 @@
                     ->modalHeading( 'Submit a Solution' )
                     ->modalSubmitActionLabel( 'Submit' )
                     ->modalWidth( 'lg' ),
+                EditAction::make( 'Edit' )->visible($this->record->isRequestor(auth()->user())),
             ];
 
 
             return $actions;
         }
 
-
-        /**
-         * Get the footer widgets for the ticket view page.
-         *
-         * @return array
-         */
-        protected function getFooterWidgets() : array
-        {
-            return [
-                TicketTimelineWidget::class,
-            ];
-        }
     }

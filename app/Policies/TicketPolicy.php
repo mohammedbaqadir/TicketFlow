@@ -12,16 +12,16 @@
     {
         use HandlesAuthorization;
 
-        /**
-         * Determine whether the user can view any tickets.
-         *
-         * @param  User  $user
-         * @return bool
-         */
-        public function viewAny( User $user ) : bool
-        {
-            return AuthHelper::userHasRole( 'admin') || AuthHelper::userHasRole( 'agent') ;
-        }
+//        /**
+//         * Determine whether the user can view any tickets.
+//         *
+//         * @param  User  $user
+//         * @return bool
+//         */
+//        public function viewAny( User $user ) : bool
+//        {
+//            return AuthHelper::userHasRole( 'admin') || AuthHelper::userHasRole( 'agent') ;
+//        }
 
 
         /**
@@ -31,20 +31,20 @@
          * @param  Ticket  $ticket
          * @return bool
          */
-        public function view( User $user, Ticket $ticket ) : bool
-        {
-            $can_view = false;
-
-            if ( AuthHelper::userHasRole( 'admin' ) ) {
-                $can_view = true;
-            } elseif ( AuthHelper::userHasRole( 'agent' ) ) {
-                $can_view = $ticket->isAssignee( $user);
-            } elseif ( AuthHelper::userHasRole( 'employee' ) ) {
-                $can_view = $ticket->isRequestor( $user);
-            }
-
-            return $can_view;
-        }
+//        public function view( User $user, Ticket $ticket ) : bool
+//        {
+//            $can_view = false;
+//
+//            if ( AuthHelper::userHasRole( 'admin' ) ) {
+//                $can_view = true;
+//            } elseif ( AuthHelper::userHasRole( 'agent' ) ) {
+//                $can_view = $ticket->isAssignee( $user);
+//            } elseif ( AuthHelper::userHasRole( 'employee' ) ) {
+//                $can_view = $ticket->isRequestor( $user);
+//            }
+//
+//            return $can_view;
+//        }
 
 
         /**
