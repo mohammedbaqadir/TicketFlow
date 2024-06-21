@@ -163,7 +163,9 @@
                     BulkActionGroup::make( [
                         DeleteBulkAction::make(),
                     ] ),
-                ] );
+                ] )
+                ->deferLoading()
+                ->striped();
         }
 
         public static function getRelations() : array
@@ -174,15 +176,6 @@
             ];
         }
 
-        public static function getBreadcrumb() : string
-        {
-            return '';
-        }
-        /**
-         * Get the pages for the resource.
-         *
-         * @return array
-         */
         public static function getPages() : array
         {
             return [

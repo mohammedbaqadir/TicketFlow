@@ -6,12 +6,15 @@
     use Illuminate\Database\Eloquent\Model;
     use Spatie\Activitylog\LogOptions;
     use Spatie\Activitylog\Traits\LogsActivity;
+    use Spatie\EloquentSortable\Sortable;
+    use Spatie\EloquentSortable\SortableTrait;
     use Spatie\MediaLibrary\HasMedia;
     use Spatie\MediaLibrary\InteractsWithMedia;
 
-    class Solution extends Model implements HasMedia
+    class Solution extends Model implements HasMedia, Sortable
     {
         use InteractsWithMedia;
+        use SortableTrait;
 
         protected $fillable = [ 'ticket_id', 'user_id', 'content', 'resolved' ];
 

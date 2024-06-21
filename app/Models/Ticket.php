@@ -2,21 +2,27 @@
 
     namespace App\Models;
 
+    use App\Enums\TicketStatus;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
     use Illuminate\Database\Eloquent\Model;
     use Illuminate\Database\Eloquent\Relations\BelongsTo;
     use Illuminate\Database\Eloquent\Relations\HasMany;
-    use Illuminate\Database\Eloquent\SoftDeletes;
     use Spatie\Activitylog\LogOptions;
     use Spatie\Activitylog\Traits\LogsActivity;
+    use Spatie\EloquentSortable\Sortable;
+    use Spatie\EloquentSortable\SortableTrait;
     use Spatie\MediaLibrary\HasMedia;
     use Spatie\MediaLibrary\InteractsWithMedia;
 
-    class Ticket extends Model implements HasMedia
+    class Ticket extends Model implements HasMedia, Sortable
     {
         use InteractsWithMedia;
         use LogsActivity;
+        use SortableTrait;
 
+        public $sortable = [
+            'order_column_name' => 'created_at',
+        ];
         /**
          * Configure the activity log options for the Ticket model.
          *
@@ -28,7 +34,7 @@
                 ->useLogName( 'ticket' )
                 ->logOnly( [ 'status' ] )
                 ->logOnlyDirty()
-                ->setDescriptionForEvent( function ( string $eventName, Model $model ) {
+                ->setDescriptionForEvent( function ( string $eventName ) {
                     return "Ticket is {$this->status}";
                 } );
         }
@@ -49,7 +55,9 @@
             'timeout_at'
         ];
 
-        public function registerMediaCollections() : void
+
+
+    public function registerMediaCollections() : void
         {
             $this->addMediaCollection( 'ticket_attachments' );
         }

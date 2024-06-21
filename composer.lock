@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "89c7670f488d2d1b912a906675fd2e52",
+    "content-hash": "20650898cccec3072b77f8a71a886b18",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -1720,6 +1720,75 @@
                 "source": "https://github.com/filamentphp/filament"
             },
             "time": "2024-06-05T09:38:52+00:00"
+        },
+        {
+            "name": "filipfonal/filament-log-manager",
+            "version": "2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/filipfonal/filament-log-manager.git",
+                "reference": "91e1d57c3e099b679ac8d2930b196a88d63e213b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/filipfonal/filament-log-manager/zipball/91e1d57c3e099b679ac8d2930b196a88d63e213b",
+                "reference": "91e1d57c3e099b679ac8d2930b196a88d63e213b",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^3.0",
+                "php": "^8.1",
+                "spatie/laravel-package-tools": "^1.9.2"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.2",
+                "nunomaduro/collision": "^7.0",
+                "nunomaduro/larastan": "^2.0.1",
+                "orchestra/testbench": "^8.0",
+                "phpstan/extension-installer": "^1.1",
+                "phpstan/phpstan-deprecation-rules": "^1.0",
+                "phpstan/phpstan-phpunit": "^1.0",
+                "phpunit/phpunit": "^9.5"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "FilipFonal\\FilamentLogManager\\FilamentLogManagerServiceProvider"
+                    ],
+                    "aliases": {
+                        "FilamentLogManager": "FilipFonal\\FilamentLogManager\\Facades\\FilamentLogManager"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "FilipFonal\\FilamentLogManager\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Filip Fonal",
+                    "email": "filipfonal@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Filament Log Manager",
+            "homepage": "https://github.com/filipfonal/filament-log-manager",
+            "keywords": [
+                "filament-log-manager",
+                "filipfonal",
+                "laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/filipfonal/filament-log-manager/issues",
+                "source": "https://github.com/filipfonal/filament-log-manager/tree/2.0.0"
+            },
+            "time": "2023-09-12T22:13:43+00:00"
         },
         {
             "name": "fruitcake/php-cors",
@@ -3773,6 +3842,83 @@
             "time": "2024-07-07T20:30:00+00:00"
         },
         {
+            "name": "mokhosh/filament-kanban",
+            "version": "v2.8.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mokhosh/filament-kanban.git",
+                "reference": "60580f0ff15b4941956b38740c5dc17a426b069d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mokhosh/filament-kanban/zipball/60580f0ff15b4941956b38740c5dc17a426b069d",
+                "reference": "60580f0ff15b4941956b38740c5dc17a426b069d",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^3.0",
+                "illuminate/contracts": "^10.0|^11.0",
+                "php": "^8.1",
+                "spatie/laravel-package-tools": "^1.15.0"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.0",
+                "nunomaduro/collision": "^7.9|^8.0",
+                "orchestra/testbench": "^8.0|^9.0",
+                "pestphp/pest": "^2.0",
+                "pestphp/pest-plugin-arch": "^2.0",
+                "pestphp/pest-plugin-laravel": "^2.0",
+                "pestphp/pest-plugin-livewire": "^2.1",
+                "spatie/eloquent-sortable": "^4.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Mokhosh\\FilamentKanban\\FilamentKanbanServiceProvider"
+                    ],
+                    "aliases": {
+                        "FilamentKanban": "Mokhosh\\FilamentKanban\\Facades\\FilamentKanban"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Mokhosh\\FilamentKanban\\": "src/",
+                    "Mokhosh\\FilamentKanban\\Database\\Factories\\": "database/factories/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Mo Khosh",
+                    "email": "mskhoshnazar@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Add kanban boards to your Filament pages",
+            "homepage": "https://github.com/mokhosh/filament-kanban",
+            "keywords": [
+                "filament-kanban",
+                "laravel",
+                "mokhosh"
+            ],
+            "support": {
+                "issues": "https://github.com/mokhosh/filament-kanban/issues",
+                "source": "https://github.com/mokhosh/filament-kanban"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/mokhosh",
+                    "type": "github"
+                }
+            ],
+            "time": "2024-04-08T21:27:53+00:00"
+        },
+        {
             "name": "monolog/monolog",
             "version": "3.7.0",
             "source": {
@@ -5498,6 +5644,80 @@
                 }
             ],
             "time": "2022-12-18T12:58:32+00:00"
+        },
+        {
+            "name": "spatie/eloquent-sortable",
+            "version": "4.4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/spatie/eloquent-sortable.git",
+                "reference": "7a460c775d29741f42744bac52f993cb5b84be0f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/spatie/eloquent-sortable/zipball/7a460c775d29741f42744bac52f993cb5b84be0f",
+                "reference": "7a460c775d29741f42744bac52f993cb5b84be0f",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/database": "^9.31|^10.0|^11.0",
+                "illuminate/support": "^9.31|^10.0|^11.0",
+                "nesbot/carbon": "^2.63|^3.0",
+                "php": "^8.1",
+                "spatie/laravel-package-tools": "^1.9"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^7.0|^8.0|^9.0",
+                "phpunit/phpunit": "^9.5|^10.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Spatie\\EloquentSortable\\EloquentSortableServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Spatie\\EloquentSortable\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Freek Van der Herten",
+                    "email": "freek@spatie.be"
+                }
+            ],
+            "description": "Sortable behaviour for eloquent models",
+            "homepage": "https://github.com/spatie/eloquent-sortable",
+            "keywords": [
+                "behaviour",
+                "eloquent",
+                "laravel",
+                "model",
+                "sort",
+                "sortable"
+            ],
+            "support": {
+                "issues": "https://github.com/spatie/eloquent-sortable/issues",
+                "source": "https://github.com/spatie/eloquent-sortable/tree/4.4.0"
+            },
+            "funding": [
+                {
+                    "url": "https://spatie.be/open-source/support-us",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/spatie",
+                    "type": "github"
+                }
+            ],
+            "time": "2024-06-04T11:09:54+00:00"
         },
         {
             "name": "spatie/image",

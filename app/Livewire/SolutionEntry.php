@@ -24,25 +24,7 @@
             $this->solution = $solution;
         }
 
-        public function markAsValid( Solution $solution ) : void
-        {
-            $solution->markValid();
-            Notification::make()
-                ->title( 'Valid' )
-                ->body( 'Solution Marked Valid. Ticket Closed' )
-                ->success()
-                ->send();
-        }
 
-        public function markAsInvalid( Solution $solution ) : void
-        {
-            $solution->markInvalid();
-            Notification::make()
-                ->title( 'Invalid' )
-                ->body( 'Solution Marked Invalid.' )
-                ->info()
-                ->send();
-        }
 
         public function render()
         {

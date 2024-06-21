@@ -12,6 +12,7 @@
     use Filament\PanelProvider;
     use Filament\Support\Colors\Color;
     use Filament\Widgets;
+    use FilipFonal\FilamentLogManager\FilamentLogManager;
     use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
     use Illuminate\Cookie\Middleware\EncryptCookies;
     use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -31,9 +32,10 @@
                 ->id( 'app' )
                 ->path( 'app' )
                 ->topNavigation()
-                ->colors( [
-                    'primary' => Color::Amber,
-                ] )
+                ->viteTheme( 'resources/css/filament/app/theme.css')
+                ->brandName( 'TicketFlow')
+                ->brandLogo( asset( 'images/favicon.ico' ))
+                ->favicon( asset( 'images/favicon.ico' ) )
                 ->discoverResources( in: app_path( 'Filament/Resources' ), for: 'App\\Filament\\Resources' )
                 ->discoverPages( in: app_path( 'Filament/Pages' ), for: 'App\\Filament\\Pages' )
                 ->pages( [
@@ -57,6 +59,10 @@
                 ] )
                 ->authMiddleware( [
                     Authenticate::class,
-                ] );
+                ] )->breadcrumbs( false )
+                ->darkMode(false)
+                ->plugins( [
+                    FilamentLogManager::make(),
+                ]);
         }
     }
