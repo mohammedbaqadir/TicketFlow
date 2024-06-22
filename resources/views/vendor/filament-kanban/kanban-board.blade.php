@@ -1,4 +1,5 @@
 <x-filament-panels::page :full-height="true">
+    <h2>Tickets pending action, of this week.</h2>
     <div x-data wire:ignore.self class="md:flex  gap-4 pb-4">
         @foreach($statuses as $status)
             @include(static::$statusView)

@@ -23,23 +23,7 @@
             return AuthHelper::userHasRole( 'admin');
         }
 
-//        protected function getHeaderWidgets() : array
-//        {
-//            return [
-//                TotalTickets::class,
-//                AgentLeaderboard::class,
-//                PendingTickets::class,
-//            ];
-//        }
-//        protected function getFooterWidgets() : array
-//        {
-//            return [
-//                TicketsResolutionTime::class,
-//                AgentsWorkload::class,
-//                TicketsStatusOverview::class,
-//                TicketsByPriority::class,
-//            ];
-//        }
+
 
 
     }

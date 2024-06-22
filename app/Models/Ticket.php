@@ -69,6 +69,21 @@
             'timeout_at' => 'datetime',
         ];
 
+        public function getFormattedStatusAttribute()
+        {
+            return $this->getFormattedEnumValue( 'ticket_status', $this->status );
+        }
+
+        public function getFormattedPriorityAttribute()
+        {
+            return $this->getFormattedEnumValue( 'ticket_priority', $this->priority );
+        }
+
+        private function getFormattedEnumValue( $configKey, $value )
+        {
+            $mappings = config( "enums.{$configKey}", [] );
+            return $mappings[ $value ] ?? strtoupper( str_replace( '-', ' ', $value ) );
+        }
 
         /**
          * Determine if the given user is the requestor of the ticket.

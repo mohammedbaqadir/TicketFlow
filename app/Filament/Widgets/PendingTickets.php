@@ -3,6 +3,7 @@
     namespace App\Filament\Widgets;
 
     use App\Models\Ticket;
+    use App\Traits\HasCustomRecordUrl;
     use Filament\Tables;
     use Filament\Tables\Columns\TextColumn;
     use Filament\Tables\Filters\SelectFilter;
@@ -13,26 +14,27 @@
 
     class PendingTickets extends BaseWidget
     {
+        use HasCustomRecordUrl;
+
         public function table( Table $table ) : Table
         {
             return $table
                 ->description( 'Listing of tickets that are currently unassigned or pending action.' )
+                ->recordUrl( ( new static() )->getTableRecordUrlUsing())
                 ->query(
-                    fn( Builder $query ) => Ticket::query()->where( 'status', 'open' )->orWhere( 'status',
-                        'awaiting-acceptance' )->orWhere( 'status',
-                        'elevated' )
+                    fn( Builder $query ) => Ticket::query()->whereIn( 'status', ['open', 'awaiting-acceptance', 'elevated' ] )
                 )
                 ->columns( [
                     TextColumn::make( 'id' ),
                     TextColumn::make( 'title' ),
                     TextColumn::make( 'requestor.name' )->label( 'Requestor' ),
-                    TextColumn::make( 'status' )->label( 'Status'),
+                    TextColumn::make( 'formatted_status' )->label( 'Status'),
                     TextColumn::make( 'created_at' )->label( 'Created' )->sortable()->dateTime(),
                 ] )->filters( [
                     SelectFilter::make( 'status' )->options( [
-                        'open' => 'Open',
-                        'awaiting-acceptance' => 'Awaiting Acceptance',
-                        'elevated' => 'Elevated',
+                        'open' => 'OPEN',
+                        'awaiting-acceptance' => 'AWAITING ACCEPTANCE',
+                        'elevated' => 'ELEVATED',
                     ] ),
                 ] )
                 ->paginated( false );

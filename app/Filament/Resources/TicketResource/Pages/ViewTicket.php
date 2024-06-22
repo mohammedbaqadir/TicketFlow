@@ -2,9 +2,12 @@
 
     namespace App\Filament\Resources\TicketResource\Pages;
 
+    use App\Helpers\AuthHelper;
     use App\Livewire\SolutionEntry;
+    use App\Models\User;
     use Filament\Actions\Action;
     use Filament\Actions\EditAction;
+    use Filament\Forms\Components\Select;
     use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
     use Filament\Forms\Components\Textarea;
     use Filament\Infolists\Components\Livewire;
@@ -62,8 +65,8 @@
                                     ->icon( 'heroicon-o-question-mark-circle' )
                                     ->schema( [
                                         TextEntry::make( 'description' )->label( 'Description' ),
-                                        TextEntry::make( 'status' )->label( 'Status' ),
-                                        TextEntry::make( 'priority' )->label( 'Priority' ),
+                                        TextEntry::make( 'formatted_status' )->label( 'Status' ),
+                                        TextEntry::make( 'formatted_priority' )->label( 'Priority' ),
                                         TextEntry::make( 'requestor.name' )->label( 'Created By' ),
                                         TextEntry::make( 'assignee.name' )->label( 'Assigned To' ),
                                     ] ),
@@ -122,7 +125,37 @@
                     } )
                     ->color( 'danger' )
                     ->requiresConfirmation(),
+                Action::make( 'assign-another' )
+                    ->label( 'Assign a Different Agent' )
+                    ->visible( fn(
+                    ) => !( $this->record->isAssignee( auth()->user() ) ) && AuthHelper::userHasRole( 'admin' ) )
+                    ->form( function ( Ticket $record ) : array {
+                        $formSchema = [];
+                        $formSchema[] = Select::make( 'action' )
+                            ->label( 'Action' )
+                            ->options( [
+                                'assign_to_self' => 'Assign to Myself',
+                                'assign_to_agent' => 'Assign to Agent',
+                            ] )
+                            ->reactive()
+                            ->required();
+                        $formSchema[] = Select::make( 'agent_id' )
+                            ->label( 'Assign to Agent' )
+                            ->options( User::isAgent()->pluck( 'name', 'id' ) )
+                            ->visible( fn( $get ) => $get( 'action' ) === 'assign_to_agent' )
+                            ->required( fn( $get ) => $get( 'action' ) === 'assign_to_agent' );
+                        return $formSchema;
+                    } )
+                    ->action( function ( array $data, Ticket $record) {
+                        ( new TicketService() )->unassignTicket( $record, $record->assignee );
+                        ( new TicketService() )->assignTicket( $record, $data );
 
+                        return redirect()->route( 'filament.app.resources.tickets.view', $record );
+                    } )
+                    ->color( 'danger' )
+                    ->modalHeading('Assign Ticket' )
+                    ->modalSubmitActionLabel( 'Assign' )
+                    ->modalWidth( 'lg' ),
                 Action::make( 'submitSolution' )
                     ->label( 'Submit a Solution' )
                     ->color( 'success' )
@@ -149,7 +182,7 @@
                     ->modalHeading( 'Submit a Solution' )
                     ->modalSubmitActionLabel( 'Submit' )
                     ->modalWidth( 'lg' ),
-                EditAction::make( 'Edit' )->visible($this->record->isRequestor(auth()->user())),
+                EditAction::make( 'Edit' )->visible( $this->record->isRequestor( auth()->user() ) ),
             ];
 
 

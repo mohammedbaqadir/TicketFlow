@@ -31,7 +31,14 @@
                 ->default()
                 ->id( 'app' )
                 ->path( 'app' )
-                ->topNavigation()
+                ->topNavigation()->colors( [
+                    'danger' => Color::Red,
+                    'gray' => Color::hex( '#192a35' ),
+                    'info' => Color::hex( '#b3f2f8' ),
+                    'primary' => Color::hex( '#9eace5' ),
+                    'success' => Color::Green,
+                    'warning' => Color::Amber,
+                ])
                 ->viteTheme( 'resources/css/filament/app/theme.css')
                 ->brandName( 'TicketFlow')
                 ->brandLogo( asset( 'images/favicon.ico' ))

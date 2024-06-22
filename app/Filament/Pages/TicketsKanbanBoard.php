@@ -3,12 +3,18 @@
     namespace App\Filament\Pages;
 
     use App\Enums\TicketStatus;
+    use App\Helpers\AuthHelper;
     use App\Models\Ticket;
     use Illuminate\Support\Str;
     use Mokhosh\FilamentKanban\Pages\KanbanBoard;
 
     class TicketsKanbanBoard extends KanbanBoard
     {
+        public static function canAccess() : bool
+        {
+            return AuthHelper::userHasRole( 'admin' );
+        }
+
         protected static string $model = Ticket::class;
         public bool $disableEditModal = true;
         protected static ?string $navigationIcon = 'heroicon-o-rectangle-group';
@@ -37,8 +43,6 @@
                 [ 'id' => 'open', 'title' => 'Open' ],
                 [ 'id' => 'in-progress', 'title' => 'In Progress' ],
                 [ 'id' => 'awaiting-acceptance', 'title' => 'Awaiting Acceptance' ],
-//                [ 'id' => 'elevated', 'title' => 'Elevated' ],
-//                [ 'id' => 'closed', 'title' => 'Closed' ],
             ] );
         }
 

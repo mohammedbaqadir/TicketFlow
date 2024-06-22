@@ -6,9 +6,6 @@
     use App\Filament\Resources\TicketResource\Pages\EditTicket;
     use App\Filament\Resources\TicketResource\Pages\ListTickets;
     use App\Filament\Resources\TicketResource\Pages\ViewTicket;
-    use App\Filament\Resources\TicketResource\Pages\ViewTicketActivities;
-    use App\Filament\Resources\TicketResource\RelationManagers\AssigneeRelationManager;
-    use App\Filament\Resources\TicketResource\RelationManagers\RequestorRelationManager;
     use App\Helpers\AuthHelper;
     use App\Helpers\NavigationHelper;
     use App\Models\Ticket;
@@ -93,30 +90,31 @@
                 ->columns( [
                     TextColumn::make( 'id' )->sortable(),
                     TextColumn::make( 'title' )->sortable()->searchable(),
-                    TextColumn::make( 'description' )->sortable()->searchable(),
-                    TextColumn::make( 'status' )->sortable()->searchable(),
-                    TextColumn::make( 'priority' )->sortable()->searchable(),
                     TextColumn::make( 'requestor.name' )->label( 'Created By' )->sortable()->searchable(),
+                    TextColumn::make( 'formatted_status' )->label( 'Status')->sortable(['status'])->searchable(['status']),
+                    TextColumn::make( 'formatted_priority' )->label( 'Priority' )->sortable( [ 'priority' ] )
+                        ->searchable( [ 'priority' ] ),
                     TextColumn::make( 'assignee.name' )->label( 'Assigned To' )->sortable()->searchable(),
-                    TextColumn::make( 'created_at' )->sortable()->dateTime(),
                     TextColumn::make( 'timeout_at' )->sortable()->dateTime(),
                 ] )
                 ->recordUrl( ( new static() )->getTableRecordUrlUsing() )
                 ->filters( [
                     SelectFilter::make( 'status' )
                         ->options( [
-                            'open' => 'Open',
-                            'in-progress' => 'In Progress',
-                            'awaiting-acceptance' => 'Awaiting Acceptance',
-                            'elevated' => 'Elevated',
-                            'closed' => 'Closed',
+                            'open' => 'OPEN',
+                            'in-progress' => 'IN PROGRESS',
+                            'awaiting-acceptance' => 'AWAITING ACCEPTANCE',
+                            'elevated' => 'ELEVATED',
+                            'closed' => 'CLOSED',
                         ] ),
+
                     SelectFilter::make( 'priority' )
                         ->options( [
-                            'low' => 'Low',
-                            'medium' => 'Medium',
-                            'high' => 'High',
+                            'low' => 'LOW',
+                            'medium' => 'MEDIUM',
+                            'high' => 'HIGH',
                         ] ),
+
                 ] )
                 ->actions( [
                     Action::make( 'assignTicket' )
