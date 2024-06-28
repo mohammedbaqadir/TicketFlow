@@ -1,4 +1,5 @@
 <?php
+    declare( strict_types = 1 );
 
     use Illuminate\Database\Migrations\Migration;
     use Illuminate\Database\Schema\Blueprint;
@@ -10,7 +11,7 @@
          */
         public function up(): void
         {
-            Schema::create('tickets', function (Blueprint $table) {
+            Schema::create( 'tickets', function ( Blueprint $table ) {
                 $table->id();
                 $table->string( 'title' );
                 $table->text( 'description' );
@@ -19,6 +20,7 @@
                 $table->dateTime( 'timeout_at' );
                 $table->unsignedBigInteger( 'created_by' );
                 $table->unsignedBigInteger( 'assigned_to' )->nullable();
+                $table->softDeletes();
                 $table->timestamps();
                 $table->foreign( 'created_by' )->references( 'id' )->on( 'users' )->onDelete( 'cascade' );
                 $table->foreign( 'assigned_to' )->references( 'id' )->on( 'users' )->onDelete( 'set null' );

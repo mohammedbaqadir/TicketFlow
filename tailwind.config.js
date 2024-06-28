@@ -1,6 +1,7 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
-import preset from './vendor/filament/support/tailwind.config.preset'
+import typography from '@tailwindcss/typography';
+import preset from './vendor/filament/support/tailwind.config.preset';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -13,16 +14,31 @@ export default {
     './app/Filament/**/*.php',
     './resources/views/filament/**/*.blade.php',
     './vendor/filament/**/*.blade.php',
-    './vendor/jaocero/activity-timeline/resources/views/**/*.blade.php',
+    "./node_modules/flowbite/**/*.js"
   ],
-
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
         sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+        body: ['Inter', ...defaultTheme.fontFamily.sans],
       },
+      colors: {
+        primary: {
+          "50": "#eff6ff",
+          "100": "#dbeafe",
+          "200": "#bfdbfe",
+          "300": "#93c5fd",
+          "400": "#60a5fa",
+          "500": "#3b82f6",
+          "600": "#2563eb",
+          "700": "#1d4ed8",
+          "800": "#1e40af",
+          "900": "#1e3a8a",
+          "950": "#172554"
+        }
+      }
     },
   },
-
-  plugins: [forms],
+  plugins: [forms, typography, require('flowbite/plugin')]
 };

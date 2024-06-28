@@ -4,6 +4,7 @@
 
     use App\Filament\Resources\TicketResource;
     use App\Helpers\FormHelper;
+    use App\Services\TicketService;
     use Filament\Actions;
     use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
     use Filament\Forms\Components\Textarea;
@@ -24,25 +25,6 @@
          */
         protected static string $resource = TicketResource::class;
 
-        /**
-         * Get the form schema for creating a ticket.
-         *
-         * @return array
-         */
-        protected function getFormSchema() : array
-        {
-            return [
-                TextInput::make( 'title' )
-                    ->required()
-                    ->maxLength( 255 ),
-                Textarea::make( 'description' )
-                    ->required(),
-                SpatieMediaLibraryFileUpload::make( 'attachments' )
-                    ->collection( 'ticket_attachments' )
-                    ->multiple()
-                    ->label( 'Attachments' )
-            ];
-        }
 
         /**
          * Mutate form data before creating a ticket.
@@ -52,21 +34,20 @@
          */
         protected function mutateFormDataBeforeCreate( array $data ) : array
         {
-            return FormHelper::handleCreateTicketFormData( $data );
+            $data['status'] = 'open';
+            $data['created_by'] = auth()->id();
+            $data['priority'] = $data['priority'] ?? TicketService::determinePriority( $data['title'],
+                $data['description'] );
+            $data['timeout_at'] = now()->addHours( TicketService::determineTimeout( $data['priority'] ) );
+            $data['assigned_to'] = null;
+            return $data;
         }
 
-
-        /**
-         * Get the create action.
-         *
-         * @return array
-         */
-        protected function getActions() : array
+        protected function getRedirectUrl() : string
         {
-            return [
-                Actions\CreateAction::make()
-            ];
+            return self::getResource()::getUrl( 'index' );
         }
+
 
 
     }

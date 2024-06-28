@@ -1,12 +1,15 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Models;
 
-    use App\Enums\TicketStatus;
-    use Illuminate\Database\Eloquent\Factories\HasFactory;
+    use App\Observers\TicketObserver;
+    use Illuminate\Database\Eloquent\Attributes\ObservedBy;
     use Illuminate\Database\Eloquent\Model;
     use Illuminate\Database\Eloquent\Relations\BelongsTo;
     use Illuminate\Database\Eloquent\Relations\HasMany;
+    use Illuminate\Database\Eloquent\SoftDeletes;
+    use Laravel\Scout\Searchable;
     use Spatie\Activitylog\LogOptions;
     use Spatie\Activitylog\Traits\LogsActivity;
     use Spatie\EloquentSortable\Sortable;
@@ -14,15 +17,30 @@
     use Spatie\MediaLibrary\HasMedia;
     use Spatie\MediaLibrary\InteractsWithMedia;
 
+    #[ObservedBy( [ TicketObserver::class ] )]
     class Ticket extends Model implements HasMedia, Sortable
     {
         use InteractsWithMedia;
         use LogsActivity;
         use SortableTrait;
+        use SoftDeletes;
+        use Searchable;
+
+        public function toSearchableArray()
+        {
+            return [
+                'id' => $this->id,
+                'title' => $this->title,
+                'description' => $this->description,
+                'user_id' => $this->user_id,
+            ];
+        }
+
 
         public $sortable = [
             'order_column_name' => 'created_at',
         ];
+
         /**
          * Configure the activity log options for the Ticket model.
          *
@@ -31,12 +49,7 @@
         public function getActivitylogOptions() : LogOptions
         {
             return LogOptions::defaults()
-                ->useLogName( 'ticket' )
-                ->logOnly( [ 'status' ] )
-                ->logOnlyDirty()
-                ->setDescriptionForEvent( function ( string $eventName ) {
-                    return "Ticket is {$this->status}";
-                } );
+                ->useLogName( 'ticket' );
         }
 
 
@@ -79,10 +92,18 @@
             return $this->getFormattedEnumValue( 'ticket_priority', $this->priority );
         }
 
+        public static function getFormattedStatusMappings() {
+            return config( 'enums.ticket_status' );
+        }
+
+        public static function getFormattedPriorityMappings() {
+            return config( 'enums.ticket_priority' );
+        }
+
         private function getFormattedEnumValue( $configKey, $value )
         {
-            $mappings = config( "enums.{$configKey}", [] );
-            return $mappings[ $value ] ?? strtoupper( str_replace( '-', ' ', $value ) );
+            $mappings = config( "enums.{$configKey}" );
+            return $mappings[ $value ];
         }
 
         /**
@@ -117,14 +138,6 @@
             return $this->belongsTo( User::class, 'created_by' );
         }
 
-
-        /**
-         * Get the comments for the ticket.
-         */
-        public function comments() : HasMany
-        {
-            return $this->hasMany( Comment::class );
-        }
 
         public function solutions()
         {
@@ -166,6 +179,14 @@
         {
             return $query->where( 'status', 'closed' );
         }
+        public function scopeIsTrashed( $query )
+        {
+            return $query->onlyTrashed();
+        }
 
+        public function getAttachmentsAttribute()
+        {
+            return $this->getMedia( 'ticket_attachments' );
+        }
 
     }

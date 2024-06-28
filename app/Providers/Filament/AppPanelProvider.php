@@ -1,13 +1,13 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Providers\Filament;
 
     use App\Filament\Pages\Dashboard;
-    use App\Models\User;
+    use App\Http\Middleware\FilamentAdminMiddleware;
     use Filament\Http\Middleware\Authenticate;
     use Filament\Http\Middleware\DisableBladeIconComponents;
     use Filament\Http\Middleware\DispatchServingFilamentEvent;
-    use Filament\Navigation\NavigationItem;
     use Filament\Panel;
     use Filament\PanelProvider;
     use Filament\Support\Colors\Color;
@@ -20,8 +20,6 @@
     use Illuminate\Session\Middleware\AuthenticateSession;
     use Illuminate\Session\Middleware\StartSession;
     use Illuminate\View\Middleware\ShareErrorsFromSession;
-    use App\Filament\Resources\UserResource;
-    use SolutionForest\FilamentSimpleLightBox\SimpleLightBoxPlugin;
 
     class AppPanelProvider extends PanelProvider
     {
@@ -41,8 +39,8 @@
                 ])
                 ->viteTheme( 'resources/css/filament/app/theme.css')
                 ->brandName( 'TicketFlow')
-                ->brandLogo( asset( 'images/favicon.ico' ))
-                ->favicon( asset( 'images/favicon.ico' ) )
+                ->brandLogo( asset( 'images/logo.png' ))
+                ->favicon( asset( 'favicon.ico' ) )
                 ->discoverResources( in: app_path( 'Filament/Resources' ), for: 'App\\Filament\\Resources' )
                 ->discoverPages( in: app_path( 'Filament/Pages' ), for: 'App\\Filament\\Pages' )
                 ->pages( [
@@ -66,10 +64,11 @@
                 ] )
                 ->authMiddleware( [
                     Authenticate::class,
+                    FilamentAdminMiddleware::class
                 ] )->breadcrumbs( false )
                 ->darkMode(false)
                 ->plugins( [
                     FilamentLogManager::make(),
-                ]);
+                ] );
         }
     }

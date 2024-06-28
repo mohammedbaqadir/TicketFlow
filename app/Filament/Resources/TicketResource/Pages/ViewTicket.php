@@ -1,10 +1,11 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Filament\Resources\TicketResource\Pages;
 
-    use App\Helpers\AuthHelper;
     use App\Livewire\SolutionEntry;
     use App\Models\User;
+    use App\Services\SolutionService;
     use Filament\Actions\Action;
     use Filament\Actions\EditAction;
     use Filament\Forms\Components\Select;
@@ -23,7 +24,6 @@
     use Filament\Infolists\Infolist;
     use Filament\Resources\Pages\ViewRecord;
     use Illuminate\Contracts\Support\Htmlable;
-    use Illuminate\Contracts\View\View;
     use Njxqlus\Filament\Components\Infolists\LightboxSpatieMediaLibraryImageEntry;
 
 
@@ -114,7 +114,7 @@
                     ->visible( fn() => $this->record->isAssignee( auth()->user() ) )
                     ->action( function () {
                         if ( $this->record instanceof Ticket ) {
-                            ( new TicketService() )->unassignTicket( $this->record, $this->record->assignee() );
+                            ( new TicketService() )->unassignTicket( $this->record );
 
                             Notification::make()
                                 ->title( 'Success' )
@@ -125,10 +125,40 @@
                     } )
                     ->color( 'danger' )
                     ->requiresConfirmation(),
+                Action::make( 'delete' )
+                    ->label( 'Delete' )
+                    ->action( function () {
+                        if ( $this->record instanceof Ticket ) {
+                            $ticket = Ticket::find( $this->record->getKey() );
+                            if ( $ticket ) {
+                                $ticket->delete();
+                                Notification::make()
+                                    ->title( 'Deleted' )
+                                    ->body( 'The Ticket Has Been Deleted' )
+                                    ->success()
+                                    ->send();
+                                return redirect()->route( 'filament.app.resources.tickets.index' );
+                            } else {
+                                Notification::make()
+                                    ->title( 'Error' )
+                                    ->body( 'The Ticket no longer exists' )
+                                    ->danger()
+                                    ->send();
+                            }
+                        } else {
+                            Notification::make()
+                                ->title( 'Error' )
+                                ->body( 'Invalid Ticket' )
+                                ->danger()
+                                ->send();
+                        }
+                    } )
+                    ->color( 'danger' )
+                    ->requiresConfirmation(),
+
                 Action::make( 'assign-another' )
                     ->label( 'Assign a Different Agent' )
-                    ->visible( fn(
-                    ) => !( $this->record->isAssignee( auth()->user() ) ) && AuthHelper::userHasRole( 'admin' ) )
+                    ->visible( fn() => !( $this->record->isAssignee( auth()->user() ) ))
                     ->form( function ( Ticket $record ) : array {
                         $formSchema = [];
                         $formSchema[] = Select::make( 'action' )
@@ -147,8 +177,13 @@
                         return $formSchema;
                     } )
                     ->action( function ( array $data, Ticket $record) {
-                        ( new TicketService() )->unassignTicket( $record, $record->assignee );
-                        ( new TicketService() )->assignTicket( $record, $data );
+                        ( new TicketService() )->unassignTicket( $record );
+                        if ( $data['action'] === 'assign_to_self' ) {
+                            ( new TicketService() )->assignTicket( $record, auth()->user() );
+                        } elseif ( $data['action'] === 'assign_to_agent' ) {
+                            $agent = User::findOrFail( $data['agent_id'] );
+                            ( new TicketService() )->assignTicket( $record, $agent, 'Admin' );
+                        }
 
                         return redirect()->route( 'filament.app.resources.tickets.view', $record );
                     } )
@@ -169,10 +204,9 @@
                             ->collection( 'solution_attachments' )
                             ->multiple()
                             ->label( 'Attachments' )
-                            ->preserveFilenames(),
                     ] )
                     ->action( function ( array $data ) {
-                        ( new TicketService() )->submitSolution( $this->record, $data );
+                        ( new SolutionService() )->submitSolution( $this->record, auth()->user(), $data );
                         Notification::make()
                             ->title( 'Success' )
                             ->body( 'Solution submitted successfully.' )
@@ -182,7 +216,7 @@
                     ->modalHeading( 'Submit a Solution' )
                     ->modalSubmitActionLabel( 'Submit' )
                     ->modalWidth( 'lg' ),
-                EditAction::make( 'Edit' )->visible( $this->record->isRequestor( auth()->user() ) ),
+                EditAction::make( 'Edit' ),
             ];
 
 

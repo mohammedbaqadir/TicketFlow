@@ -6,6 +6,7 @@
     use App\Helpers\AuthHelper;
     use App\Helpers\FormHelper;
     use App\Helpers\TicketHelper;
+    use App\Models\Ticket;
     use App\Services\TicketService;
     use Filament\Actions;
     use Filament\Actions\DeleteAction;
@@ -34,23 +35,15 @@
         {
             return $form->schema( [
                 TextInput::make( 'title' )
-                    ->maxLength( 255 )
-                    ->visible( AuthHelper::userHasRole( 'employee' ) ),
-                Textarea::make( 'description' )
-                    ->visible( AuthHelper::userHasRole( 'employee' ) ),
+                    ->maxLength( 255 ),
+                Textarea::make( 'description' ),
                 SpatieMediaLibraryFileUpload::make( 'attachments' )
                     ->collection( 'ticket_attachments' )
                     ->multiple()
                     ->label( 'Attachments' )
-                    ->acceptedFileTypes( [ 'image/jpeg', 'image/png', 'image/gif' ] )
-                    ->visible( AuthHelper::userHasRole( 'employee' ) ),
+                    ->acceptedFileTypes( [ 'image/jpeg', 'image/png', 'image/gif' ] ),
                 Select::make( 'priority' )
-                    ->options( [
-                        'low' => 'Low',
-                        'medium' => 'Medium',
-                        'high' => 'High',
-                    ] )
-                    ->visible( AuthHelper::userHasRole( 'agent' ) ),
+                    ->options( Ticket::getFormattedPriorityMappings() )
             ] );
         }
 
@@ -62,7 +55,9 @@
          */
         protected function mutateFormDataBeforeSave( array $data ) : array
         {
-            return FormHelper::handleEditTicketFormData( $data );
+            $data['priority'] = TicketService::determinePriority( $data['title'], $data['description'] );
+            $data['timeout_at'] = now()->addHours( TicketService::determineTimeout( $data['priority'] ) );
+            return $data;
         }
 
         /**

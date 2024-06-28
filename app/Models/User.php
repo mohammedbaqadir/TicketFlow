@@ -2,19 +2,21 @@
 
     namespace App\Models;
 
-    // use Illuminate\Contracts\Auth\MustVerifyEmail;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
     use Illuminate\Database\Eloquent\Relations\HasMany;
     use Illuminate\Foundation\Auth\User as Authenticatable;
     use Illuminate\Notifications\Notifiable;
     use Spatie\EloquentSortable\Sortable;
     use Spatie\EloquentSortable\SortableTrait;
+    use Spatie\MediaLibrary\HasMedia;
+    use Spatie\MediaLibrary\InteractsWithMedia;
 
-    class User extends Authenticatable implements Sortable
+    class User extends Authenticatable implements HasMedia
     {
         use HasFactory;
         use Notifiable;
-        use SortableTrait;
+        use InteractsWithMedia;
+
 
         /**
          * The attributes that are mass assignable.
@@ -51,6 +53,14 @@
             ];
         }
 
+
+        public function registerMediaCollections() : void
+        {
+            $this->addMediaCollection( 'avatar' )
+                ->singleFile()
+                ->useFallbackUrl( '/images/default-avatar.jpg' )
+                ->useFallbackPath( public_path( '/images/default-avatar.jpg' ) );
+        }
 
         public function scopeIsAgent( $query )
         {

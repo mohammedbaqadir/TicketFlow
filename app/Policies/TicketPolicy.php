@@ -1,4 +1,5 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Policies;
 
@@ -44,7 +45,7 @@
          */
         public function create( User $user ) : bool
         {
-            return AuthHelper::userHasRole( 'employee' );
+            return AuthHelper::userHasRole( 'employee' ) || AuthHelper::userHasRole( 'admin' ) ;
         }
 
 
@@ -57,17 +58,7 @@
          */
         public function update( User $user, Ticket $ticket ) : bool
         {
-            $can_update = false;
-
-            if ( $ticket->status !== 'closed') {
-                if ( AuthHelper::userHasRole( 'agent' ) ) {
-                    $can_update = $ticket->isAssignee( $user);
-                } elseif ( AuthHelper::userHasRole( 'employee' ) ) {
-                    $can_update = $ticket->isRequestor( $user);
-                }
-            }
-
-            return $can_update;
+            return $ticket->status !== 'closed' && $ticket->isRequestor( $user );
         }
 
 
@@ -80,7 +71,7 @@
          */
         public function delete( User $user, Ticket $ticket ) : bool
         {
-            return AuthHelper::userHasRole( 'admin' );
+            return $ticket->isRequestor( $user) || AuthHelper::userHasRole( 'admin' );
         }
 
         /**

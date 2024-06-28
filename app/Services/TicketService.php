@@ -1,4 +1,5 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Services;
 
@@ -8,102 +9,99 @@
     use App\Helpers\AuthHelper;
     use Exception;
     use GeminiAPI\Laravel\Facades\Gemini;
+    use Illuminate\Support\Facades\DB;
     use Illuminate\Support\Facades\Log;
-    use Spatie\Activitylog\Models\Activity;
+    use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
     class TicketService
     {
-        /**
-         * Assign a ticket to a user based on the given action and user role.
-         *
-         * @param  Ticket  $ticket
-         * @param  array  $data
-         * @return Ticket
-         */
-        public function assignTicket( Ticket $ticket, array $data ) : void
+        public function createTicket( array $data, User $user ) : Ticket
         {
-            $user = auth()->user();
+            DB::beginTransaction();
+            try {
+                $ticket = Ticket::create( [
+                    'title' => $data['title'],
+                    'description' => $data['description'],
+                    'status' => 'open',
+                    'priority' => $this->determinePriority( $data['title'], $data['description'] ),
+                    'created_by' => $user->id,
+                    'timeout_at' => now()->addHours( $this->determineTimeout( $data['priority'] ) ),
+                ] );
 
-            // Check if the user is an agent and assign the ticket to themselves
-            if ( AuthHelper::userHasRole( 'agent' ) ) {
-                $this->assignToUser( $ticket, $user );
-            } elseif ( AuthHelper::userHasRole( 'admin' ) ) {
-                // If the user is an admin, assign the ticket based on the action
-                if ( $data['action'] === 'assign_to_self' ) {
-                    $this->assignToUser( $ticket, $user );
-                } elseif ( $data['action'] === 'assign_to_agent' ) {
-                    $agent = User::findOrFail( $data['agent_id'] );
-                    $this->assignToUser( $ticket, $agent, 'Admin' );
+                if ( isset( $data['attachments'] ) ) {
+                    foreach ( $data['attachments'] as $attachment ) {
+                        $ticket->addMedia( $attachment )->toMediaCollection( 'ticket_attachments' );
+                    }
                 }
+
+                DB::commit();
+                return $ticket;
+            } catch (Exception $e) {
+                DB::rollBack();
+                Log::error( 'Error creating ticket: ' . $e->getMessage() );
+                throw $e;
             }
         }
 
-        /**
-         * Assign a ticket to a specific user and create appropriate events.
-         *
-         * @param  Ticket  $ticket
-         * @param  User  $user
-         * @param  string|null  $assignedBy
-         * @return void
-         */
-        private function assignToUser( Ticket $ticket, User $user, ?string $assignedBy = null ) : void
+
+        public function updateTicket( Ticket $ticket, array $data ) : array
         {
-            $ticket->update( ['assigned_to' => $user->id] );
-            $assignedByText = $assignedBy ? " by $assignedBy" : '';
+            DB::beginTransaction();
+            try {
+                $ticket->update( [
+                    'title' => $data['title'],
+                    'description' => $data['description'],
+                    'priority' => $this->determinePriority( $data['title'], $data['description'] ),
+                    'timeout_at' => now()->addHours( $this->determineTimeout( $ticket->priority ) ),
+                ] );
 
-            activity()
-                ->on( $ticket )
-                ->by( $user)
-                ->log( "Ticket assigned to {$user->name}.{$assignedByText}");
-
-            $ticket->update([ 'status' => 'in-progress']);
-        }
-
-        /**
-         * Unassign a ticket and create appropriate events.
-         *
-         * @param  Ticket  $ticket
-         * @return void
-         */
-        public function unassignTicket( Ticket $ticket, User $user ) : void
-        {
-            $ticket->update( ['assigned_to' => null] );
-            activity()
-                ->on( $ticket )
-                ->by( $user )
-                ->log( "{$user->name} un-assigned from ticket" );
-
-            $ticket->update( [ 'status' => 'open' ] );
-        }
-
-        /**
-         * Submit a solution for a ticket.
-         *
-         * @param  Ticket  $ticket
-         * @param  array  $data
-         * @return void
-         */
-        public function submitSolution( Ticket $ticket, array $data )
-        {
-            $assignee = $ticket->assignee;
-            $solution = Solution::create( [
-                'ticket_id' => $ticket->id,
-                'user_id' => $assignee->id,
-                'content' => $data['content'],
-            ] );
-
-            if ( isset( $data['solution_attachments'] ) ) {
-                foreach ( $data['solution_attachments'] as $file ) {
-                    $solution->addMedia( $file )->toMediaCollection( 'solution_attachments' );
+                if ( isset( $data['delete_attachments'] ) ) {
+                    $ticket->deleteMedia( $data['delete_attachments'] );
                 }
-            }
-            activity()
-                ->on( $ticket )
-                ->by( $assignee )
-                ->log( 'Solution submitted by ' . $assignee );
 
-            $ticket->update( [ 'status' => 'awaiting-acceptance' ] );
+                if ( isset( $data['attachments'] ) ) {
+                    foreach ( $data['attachments'] as $attachment ) {
+                        $ticket->addMedia( $attachment )->toMediaCollection( 'ticket_attachments' );
+                    }
+                }
+
+                DB::commit();
+                return [
+                    'success' => true,
+                    'message' => 'Ticket updated successfully',
+                    'ticket' => $ticket->fresh()->load( 'media' ),
+                ];
+            } catch (Exception $e) {
+                DB::rollBack();
+                Log::error( 'Error updating ticket: ' . $e->getMessage() );
+                return [
+                    'success' => false,
+                    'message' => 'An error occurred while updating the ticket',
+                ];
+            }
         }
+
+        public function deleteTicket( Ticket $ticket ) : bool
+        {
+            try {
+                return $ticket->delete();
+            } catch (Exception $e) {
+                Log::error( 'Error deleting ticket: ' . $e->getMessage() );
+                return false;
+            }
+        }
+
+
+        public function assignTicket( Ticket $ticket, User $user ) : void
+        {
+            $ticket->update( [ 'assigned_to' => $user->id, 'status' => 'in-progress' ] );
+        }
+
+        public function unassignTicket( Ticket $ticket ) : void
+        {
+            $ticket->update( [ 'assigned_to' => null, 'status' => 'open' ] );
+        }
+
 
         /**
          * Determine the timeout duration based on the ticket's priority.
@@ -182,4 +180,6 @@
                 return 'low';
             }
         }
+
+
     }
