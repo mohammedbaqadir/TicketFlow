@@ -1,14 +1,10 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Filament\Resources\TicketResource\Pages;
 
     use App\Filament\Resources\TicketResource;
-    use App\Helpers\FormHelper;
     use App\Services\TicketService;
-    use Filament\Actions;
-    use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-    use Filament\Forms\Components\Textarea;
-    use Filament\Forms\Components\TextInput;
     use Filament\Resources\Pages\CreateRecord;
 
     /**
@@ -16,7 +12,9 @@
      *
      * Handles the creation of a ticket.
      */
-    class CreateTicket extends CreateRecord {
+    class CreateTicket extends CreateRecord
+    {
+
 
         /**
          * The associated resource.
@@ -34,11 +32,13 @@
          */
         protected function mutateFormDataBeforeCreate( array $data ) : array
         {
+            $ticketService = app( TicketService::class );
+
             $data['status'] = 'open';
             $data['created_by'] = auth()->id();
-            $data['priority'] = $data['priority'] ?? TicketService::determinePriority( $data['title'],
+            $data['priority'] = $data['priority'] ?? $ticketService->determinePriority( $data['title'],
                 $data['description'] );
-            $data['timeout_at'] = now()->addHours( TicketService::determineTimeout( $data['priority'] ) );
+            $data['timeout_at'] = now()->addHours( $ticketService->determineTimeout( $data['priority'] ) );
             $data['assigned_to'] = null;
             return $data;
         }
@@ -47,7 +47,6 @@
         {
             return self::getResource()::getUrl( 'index' );
         }
-
 
 
     }

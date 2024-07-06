@@ -1,0 +1,61 @@
+<?php
+    declare( strict_types = 1 );
+
+    namespace App\Models;
+
+    use App\Observers\AnswerObserver;
+    use App\Observers\TicketObserver;
+    use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
+    use Illuminate\Database\Eloquent\Model;
+    use Illuminate\Database\Eloquent\Relations\BelongsTo;
+    use Illuminate\Database\Eloquent\Relations\MorphMany;
+    use Illuminate\Database\Eloquent\SoftDeletes;
+    use Spatie\Activitylog\LogOptions;
+    use Spatie\Activitylog\Traits\LogsActivity;
+    use Spatie\MediaLibrary\HasMedia;
+    use Spatie\MediaLibrary\InteractsWithMedia;
+
+    #[ObservedBy( [ AnswerObserver::class ] )]
+    class Answer extends Model implements HasMedia
+    {
+        use InteractsWithMedia;
+        use LogsActivity;
+        use SoftDeletes;
+
+        protected $fillable = [ 'content', 'is_accepted', 'submitter_id', 'ticket_id' ];
+        protected $casts = [ 'is_accepted' => 'boolean' ];
+
+
+        public function submitter() : BelongsTo
+        {
+            return $this->belongsTo( User::class, 'submitter_id' );
+        }
+
+        public function ticket() : BelongsTo
+        {
+            return $this->belongsTo( Ticket::class );
+        }
+
+        public function comments() : MorphMany
+        {
+            return $this->morphMany( Comment::class, 'commentable' );
+        }
+
+        public function scopeAccepted( $query )
+        {
+            return $query->where( 'is_accepted', true );
+        }
+
+        public function registerMediaCollections() : void
+        {
+            $this->addMediaCollection( 'answer_attachments' );
+        }
+
+        public function getActivitylogOptions() : LogOptions
+        {
+            return LogOptions::defaults()
+                ->useLogName( 'answer' );
+        }
+
+    }

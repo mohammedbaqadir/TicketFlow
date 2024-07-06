@@ -1,3 +1,23 @@
+@php
+    $ticketGroups = [
+                [
+                    'title' => 'Pending Action',
+                    'tickets' => $tickets->filter( fn( $ticket ) => $ticket->status === 'awaiting-acceptance' ),
+                    'no_tickets_msg' => 'no tickets are pending action from you',
+                ],
+                [
+                    'title' => 'On-Going',
+                    'tickets' => $tickets->filter( fn( $ticket ) => \in_array( $ticket->status,
+                        [ 'open', 'in-progress', 'elevated' ] ) ),
+                    'no_tickets_msg' => "you don't have ongoing tickets",
+                ],
+                [
+                    'title' => 'Resolved',
+                    'tickets' => $tickets->filter( fn( $ticket ) => $ticket->status === 'closed' ),
+                    'no_tickets_msg' => "you don't have any closed tickets yet",
+                ]
+            ]
+@endphp
 @extends('components.layout.app')
 @section('content')
     <div class="mb-6 flex justify-end">

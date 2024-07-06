@@ -13,14 +13,11 @@
     {
         use HandlesAuthorization;
 
+        public function viewAny( User $user ) : bool
+        {
+            return true;
+        }
 
-        /**
-         * Determine whether the user can view the ticket.
-         *
-         * @param  User  $user
-         * @param  Ticket  $ticket
-         * @return bool
-         */
         public function view( User $user, Ticket $ticket ) : bool
         {
             $can_view = false;
@@ -28,74 +25,54 @@
             if ( AuthHelper::userHasRole( 'admin' ) ) {
                 $can_view = true;
             } elseif ( AuthHelper::userHasRole( 'agent' ) ) {
-                $can_view = $ticket->isAssignee( $user);
+                $can_view = $ticket->isAssignee( $user );
             } elseif ( AuthHelper::userHasRole( 'employee' ) ) {
-                $can_view = $ticket->isRequestor( $user);
+                $can_view = $ticket->isRequestor( $user );
             }
 
             return $can_view;
         }
 
 
-        /**
-         * Determine whether the user can create tickets.
-         *
-         * @param  User  $user
-         * @return bool
-         */
         public function create( User $user ) : bool
         {
-            return AuthHelper::userHasRole( 'employee' ) || AuthHelper::userHasRole( 'admin' ) ;
+            return AuthHelper::userHasRole( 'employee' ) || AuthHelper::userHasRole( 'admin' );
         }
 
 
-        /**
-         * Determine whether the user can update the ticket.
-         *
-         * @param  User  $user
-         * @param  Ticket  $ticket
-         * @return bool
-         */
         public function update( User $user, Ticket $ticket ) : bool
         {
             return $ticket->status !== 'closed' && $ticket->isRequestor( $user );
         }
 
 
-        /**
-         * Determine whether the user can delete the ticket.
-         *
-         * @param  User  $user
-         * @param  Ticket  $ticket
-         * @return bool
-         */
         public function delete( User $user, Ticket $ticket ) : bool
         {
-            return $ticket->isRequestor( $user) || AuthHelper::userHasRole( 'admin' );
+            return $ticket->isRequestor( $user ) || AuthHelper::userHasRole( 'admin' );
         }
 
-        /**
-         * Determine whether the user can restore the ticket.
-         *
-         * @param  User  $user
-         * @param  Ticket  $ticket
-         * @return bool
-         */
+
         public function restore( User $user, Ticket $ticket ) : bool
         {
             return AuthHelper::userHasRole( 'admin' );
         }
 
-        /**
-         * Determine whether the user can permanently delete the ticket.
-         *
-         * @param  User  $user
-         * @param  Ticket  $ticket
-         * @return bool
-         */
+
         public function forceDelete( User $user, Ticket $ticket ) : bool
         {
             return AuthHelper::userHasRole( 'admin' );
         }
+
+        public function assign( Ticket $ticket ) : bool
+        {
+            return $ticket->assigned_to === null &&
+                AuthHelper::userHasRole( 'agent' );
+        }
+
+        public function unassign( User $user, Ticket $ticket ) : bool
+        {
+            return $ticket->isAssignee( $user);
+        }
+
 
     }

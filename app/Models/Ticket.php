@@ -8,6 +8,8 @@
     use Illuminate\Database\Eloquent\Model;
     use Illuminate\Database\Eloquent\Relations\BelongsTo;
     use Illuminate\Database\Eloquent\Relations\HasMany;
+    use Illuminate\Database\Eloquent\Relations\HasOne;
+    use Illuminate\Database\Eloquent\Relations\MorphMany;
     use Illuminate\Database\Eloquent\SoftDeletes;
     use Laravel\Scout\Searchable;
     use Spatie\Activitylog\LogOptions;
@@ -26,167 +28,94 @@
         use SoftDeletes;
         use Searchable;
 
-        public function toSearchableArray()
-        {
-            return [
-                'id' => $this->id,
-                'title' => $this->title,
-                'description' => $this->description,
-                'user_id' => $this->user_id,
-            ];
-        }
+        protected $fillable = [
+            'title', 'description', 'status', 'priority', 'requestor_id', 'assignee_id', 'timeout_at',
+            'accepted_answer_id'
+        ];
 
+        protected $casts = [
+            'timeout_at' => 'datetime',
+        ];
 
         public $sortable = [
             'order_column_name' => 'created_at',
         ];
 
-        /**
-         * Configure the activity log options for the Ticket model.
-         *
-         * @return LogOptions
-         */
-        public function getActivitylogOptions() : LogOptions
+        // Relationships
+        public function requestor() : BelongsTo
         {
-            return LogOptions::defaults()
-                ->useLogName( 'ticket' );
+            return $this->belongsTo( User::class, 'requestor_id' );
         }
 
+        public function assignee() : BelongsTo
+        {
+            return $this->belongsTo( User::class, 'assignee_id' );
+        }
 
-        /**
-         * The attributes that are mass assignable.
-         *
-         * @var array<int, string>
-         */
-        protected $fillable = [
-            'title',
-            'description',
-            'status',
-            'priority',
-            'created_by',
-            'assigned_to',
-            'timeout_at'
-        ];
+        public function answers() : HasMany
+        {
+            return $this->hasMany( Answer::class );
+        }
 
+        public function acceptedAnswer() : HasOne
+        {
+            return $this->hasOne( Answer::class, 'id', 'accepted_answer_id' );
+        }
 
+        public function comments() : MorphMany
+        {
+            return $this->morphMany( Comment::class, 'commentable' );
+        }
 
-    public function registerMediaCollections() : void
+        // Scopes
+        public function scopeUnassigned( $query )
+        {
+            return $query->whereNull( 'assignee_id' );
+        }
+
+        public function scopeOverdue( $query )
+        {
+            return $query->where( 'status', '!=', 'resolved' )
+                ->where( 'timeout_at', '<', now() );
+        }
+
+        public function scopeResolved( $query )
+        {
+            return $query->where( 'status', 'resolved' );
+        }
+
+        // Accessors & Mutators
+        public function getFormattedStatusAttribute() : string
+        {
+            return config( "enums.ticket_status.{$this->status}" );
+        }
+
+        public function getFormattedPriorityAttribute() : string
+        {
+            return config( "enums.ticket_priority.{$this->priority}" );
+        }
+
+        // Media
+        public function registerMediaCollections() : void
         {
             $this->addMediaCollection( 'ticket_attachments' );
         }
 
-
-        protected $casts = [
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-            'timeout_at' => 'datetime',
-        ];
-
-        public function getFormattedStatusAttribute()
+        // Activity Log
+        public function getActivitylogOptions() : LogOptions
         {
-            return $this->getFormattedEnumValue( 'ticket_status', $this->status );
+            return LogOptions::defaults()->useLogName( 'ticket' );
         }
 
-        public function getFormattedPriorityAttribute()
+        // Scout Search
+        public function toSearchableArray() : array
         {
-            return $this->getFormattedEnumValue( 'ticket_priority', $this->priority );
-        }
-
-        public static function getFormattedStatusMappings() {
-            return config( 'enums.ticket_status' );
-        }
-
-        public static function getFormattedPriorityMappings() {
-            return config( 'enums.ticket_priority' );
-        }
-
-        private function getFormattedEnumValue( $configKey, $value )
-        {
-            $mappings = config( "enums.{$configKey}" );
-            return $mappings[ $value ];
-        }
-
-        /**
-         * Determine if the given user is the requestor of the ticket.
-         *
-         * @param  User  $user
-         * @return bool
-         */
-        public function isRequestor( User $user ) : bool
-        {
-            return $this->created_by === $user->id;
-        }
-
-        /**
-         * Determine if the given user is the assignee of the ticket.
-         *
-         * @param  User  $user
-         * @return bool
-         */
-        public function isAssignee( User $user ) : bool
-        {
-            return $this->assigned_to === $user->id;
-        }
-
-        /**
-         * Get the user who created the ticket.
-         *
-         * @return BelongsTo
-         */
-        public function requestor() : BelongsTo
-        {
-            return $this->belongsTo( User::class, 'created_by' );
-        }
-
-
-        public function solutions()
-        {
-            return $this->hasMany( Solution::class );
-        }
-
-
-        /**
-         * Get the user to whom the ticket is assigned.
-         *
-         * @return BelongsTo
-         */
-        public function assignee() : BelongsTo
-        {
-            return $this->belongsTo( User::class, 'assigned_to' );
-        }
-
-        public function scopeIsOpen( $query )
-        {
-            return $query->where( 'status', 'open' );
-        }
-
-        public function scopeIsInProgress( $query )
-        {
-            return $query->where( 'status', 'in-progress' );
-        }
-
-        public function scopeIsAwaitingAcceptance( $query )
-        {
-            return $query->where( 'status', 'awaiting-acceptance' );
-        }
-
-        public function scopeIsElevated( $query )
-        {
-            return $query->where( 'status', 'elevated' );
-        }
-
-        public function scopeIsClosed( $query )
-        {
-            return $query->where( 'status', 'closed' );
-        }
-        public function scopeIsTrashed( $query )
-        {
-            return $query->onlyTrashed();
-        }
-
-        public function getAttachmentsAttribute()
-        {
-            return $this->getMedia( 'ticket_attachments' );
+            return [
+                'id' => $this->id,
+                'title' => $this->title,
+                'description' => $this->description,
+                'requestor_id' => $this->requestor_id,
+            ];
         }
 
     }

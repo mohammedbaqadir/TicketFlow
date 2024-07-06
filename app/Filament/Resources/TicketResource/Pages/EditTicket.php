@@ -1,14 +1,11 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Filament\Resources\TicketResource\Pages;
 
     use App\Filament\Resources\TicketResource;
-    use App\Helpers\AuthHelper;
-    use App\Helpers\FormHelper;
-    use App\Helpers\TicketHelper;
     use App\Models\Ticket;
     use App\Services\TicketService;
-    use Filament\Actions;
     use Filament\Actions\DeleteAction;
     use Filament\Forms\Components\Select;
     use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -55,8 +52,10 @@
          */
         protected function mutateFormDataBeforeSave( array $data ) : array
         {
-            $data['priority'] = TicketService::determinePriority( $data['title'], $data['description'] );
-            $data['timeout_at'] = now()->addHours( TicketService::determineTimeout( $data['priority'] ) );
+            $ticketService = app( TicketService::class );
+
+            $data['priority'] = $ticketService->determinePriority( $data['title'], $data['description'] );
+            $data['timeout_at'] = now()->addHours( $ticketService->determineTimeout( $data['priority'] ) );
             return $data;
         }
 

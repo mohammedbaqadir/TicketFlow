@@ -5,109 +5,92 @@
 
     use App\Http\Requests\StoreTicketRequest;
     use App\Http\Requests\UpdateTicketRequest;
-    use App\Models\Solution;
     use App\Models\Ticket;
-    use App\Services\SolutionService;
     use App\Services\TicketService;
-    use Illuminate\Http\JsonResponse;
+    use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+    use Illuminate\Http\RedirectResponse;
     use Illuminate\Http\Request;
     use Illuminate\Support\Facades\Auth;
     use Illuminate\Support\Facades\Log;
+    use Illuminate\View\View;
 
     class TicketController extends Controller
     {
-        protected TicketService $ticketService;
+        use AuthorizesRequests;
 
-        public function __construct( TicketService $ticketService )
+        private TicketService $service;
+
+        public function __construct( TicketService $service )
         {
-            $this->ticketService = $ticketService;
+            $this->service = $service;
+            $this->authorizeResource( Ticket::class, 'ticket' );
         }
 
-        public function create()
+        public function index( Request $request ) : View
+        {
+            $tickets = $this->service->getAll( $request->only( [ 'filters', 'sort', 'per_page' ] ) );
+            return view( 'tickets.index', compact( 'tickets' ) );
+        }
+
+        public function create() : View
         {
             return view( 'tickets.create' );
         }
 
-        public function store( StoreTicketRequest $request )
+        public function store( StoreTicketRequest $request ) : RedirectResponse
         {
-            $ticket = $this->ticketService->createTicket( $request->validated(), Auth::user() );
-            return redirect()->route( 'tickets.show', $ticket )->with( 'success', 'Ticket created successfully.' );
+            $ticket = $this->service->create( $request->validated() );
+            return redirect()->route( 'tickets.show', $ticket )
+                ->with( 'success', __( 'tickets.created_successfully' ) );
         }
 
-        public function show( Ticket $ticket )
+        public function show( Ticket $ticket ) : View
         {
+            $ticket->load( [ 'requestor', 'assignee', 'answers', 'comments' ] );
             return view( 'tickets.show', compact( 'ticket' ) );
         }
 
-        public function edit( Ticket $ticket )
+        public function edit( Ticket $ticket ) : View
         {
             return view( 'tickets.edit', compact( 'ticket' ) );
         }
 
-        public function update( UpdateTicketRequest $request, Ticket $ticket )
+        public function update( UpdateTicketRequest $request, Ticket $ticket ) : RedirectResponse
         {
-            $result = $this->ticketService->updateTicket( $ticket, $request->validated() );
-            if ( $result['success'] ) {
-                return redirect()->route( 'tickets.show', $ticket )->with( 'success', 'Ticket updated successfully.' );
-            }
-            return back()->withErrors( $result['message'] );
+            $updatedTicket = $this->service->update( $ticket->id, $request->validated() );
+            return redirect()->route( 'tickets.show', $updatedTicket )
+                ->with( 'success', __( 'tickets.updated_successfully' ) );
         }
 
-        public function destroy( Ticket $ticket )
+        public function destroy( Ticket $ticket ) : RedirectResponse
         {
-            $result = $this->ticketService->deleteTicket( $ticket );
-            if ( $result ) {
-                return redirect()->route( 'my-tickets' )->with( 'success', 'Ticket deleted successfully.' );
-            }
-            return back()->withErrors( 'Failed to delete the ticket.' );
+            $this->service->delete( $ticket->id );
+            return redirect()->route( 'tickets.index' )
+                ->with( 'success', __( 'tickets.deleted_successfully' ) );
         }
 
-
-        public function myTickets()
+        public function myTickets( Request $request ) : View
         {
-            $response = null;
-
-            $user = Auth::user();
-            if ( $user ) {
-                try {
-                    // Fetch the user's created tickets with eager loading
-                    $tickets = $user->createdTickets()->with( [
-                        'solutions', 'media', 'requestor', 'assignee'
-                    ] )->get();
-
-                    // Prepare data for view
-                    $ticketGroups = $this->prepareTicketGroups( $tickets );
-                    $response = view( 'tickets.my-tickets', [ 'ticketGroups' => $ticketGroups ] );
-                } catch (\Exception $e) {
-                    Log::error( 'Error fetching tickets: ' . $e->getMessage() );
-                    $response = redirect()->route( 'error' )->withErrors( [ 'msg' => 'There was an issue fetching your tickets. Please try again later.' ] );
-                }
-            } else {
-                $response = redirect()->route( 'login' )->withErrors( [ 'msg' => 'You must be logged in to view your tickets.' ] );
-            }
-
-            return $response;
+            $tickets = $this->service->getTicketsByUser(
+                $request->user(),
+                $request->only( [ 'filters', 'sort', 'per_page' ] )
+            );
+            return view( 'tickets.my-tickets', compact( 'tickets' ) );
         }
 
-        private function prepareTicketGroups( $tickets ) : array
+        public function assign( Ticket $ticket ) : RedirectResponse
         {
-            return [
-                [
-                    'title' => 'Pending Action',
-                    'tickets' => $tickets->filter( fn( $ticket ) => $ticket->status === 'awaiting-acceptance' ),
-                    'no_tickets_msg' => 'no tickets are pending action from you',
-                ],
-                [
-                    'title' => 'On-Going',
-                    'tickets' => $tickets->filter( fn( $ticket ) => \in_array( $ticket->status,
-                        [ 'open', 'in-progress', 'elevated' ] ) ),
-                    'no_tickets_msg' => "you don't have ongoing tickets",
-                ],
-                [
-                    'title' => 'Resolved',
-                    'tickets' => $tickets->filter( fn( $ticket ) => $ticket->status === 'closed' ),
-                    'no_tickets_msg' => "you don't have any closed tickets yet",
-                ]
-            ];
+            $this->authorize( 'assign', $ticket );
+            $this->service->assignTicket( $ticket, auth()->user() );
+            return redirect()->route( 'tickets.show', $ticket )
+                ->with( 'success', __( 'tickets.assigned_successfully' ) );
+        }
+
+        public function unassign( Ticket $ticket ) : RedirectResponse
+        {
+            $this->authorize( 'unassign', $ticket );
+            $this->service->unassignTicket( $ticket );
+            return redirect()->route( 'tickets.show', $ticket )
+                ->with( 'success', __( 'tickets.unassigned_successfully' ) );
         }
     }

@@ -1,17 +1,19 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Http\Requests;
 
+    use App\Models\Answer;
     use Illuminate\Foundation\Http\FormRequest;
 
-    class UpdateTicketRequest extends FormRequest
+    class StoreAnswerRequest extends FormRequest
     {
         /**
          * Determine if the user is authorized to make this request.
          */
-        public function authorize(): bool
+        public function authorize() : bool
         {
-            return $this->user()->can( 'update', $this->route('ticket')) ;
+            return $this->user()->can( 'create', Answer::class );
         }
 
         /**
@@ -19,11 +21,10 @@
          *
          * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
          */
-        public function rules(): array
+        public function rules() : array
         {
             return [
-                'title' => [ 'sometimes', 'string', 'max:255' ],
-                'description' => [ 'sometimes', 'string' ],
+                'content' => [ 'required', 'string' ],
             ];
         }
     }

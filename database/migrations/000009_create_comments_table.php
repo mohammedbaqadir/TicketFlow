@@ -1,4 +1,5 @@
 <?php
+    declare( strict_types = 1 );
 
     use Illuminate\Database\Migrations\Migration;
     use Illuminate\Database\Schema\Blueprint;
@@ -10,13 +11,13 @@
          */
         public function up(): void
         {
-            Schema::create( 'solutions', function ( Blueprint $table ) {
+            Schema::create('comments', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId( 'ticket_id' )->constrained()->onDelete( 'cascade' );
-                $table->foreignId( 'user_id' )->constrained()->onDelete( 'cascade' );
                 $table->text( 'content' );
-                $table->boolean( 'resolved' )->nullable()->default( null );
+                $table->foreignId( 'user_id' )->constrained();
+                $table->morphs( 'commentable' );
                 $table->timestamps();
+                $table->softDeletes();
             });
         }
 
@@ -25,6 +26,6 @@
          */
         public function down(): void
         {
-            Schema::dropIfExists('solutions');
+            Schema::dropIfExists('comments');
         }
     };
