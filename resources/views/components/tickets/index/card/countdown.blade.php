@@ -1,43 +1,83 @@
-@props(['timeoutAt', 'ticketStatus'])
+@props(['timeoutAt', 'ticketStatus', 'compact' => false])
 
 @php
     use App\Helpers\AuthHelper;
-    $shouldRender = AuthHelper::userHasRole('agent') && $ticketStatus !== 'closed';
+    $shouldRender = AuthHelper::userHasRole('agent') && $ticketStatus !== 'resolved';
+    $compactClasses = $compact ? 'w-8 h-8 text-sm' : 'text-base sm:text-lg lg:text-xl';
 @endphp
 
 @if($shouldRender)
     <div
+            x-cloak
             x-data="countdownTimer('{{ $timeoutAt }}')"
             x-init="init()"
             x-show="showElement"
             class="mt-4 flex justify-center items-center"
     >
-        <div class="flex flex-col items-center justify-end h-full">
-            <div x-show="!isTimedOut" class="flex items-center space-x-2 mb-2">
-                <span class="text-sm text-gray-700 dark:text-gray-300">Times Out in:</span>
-                <div class="flex items-center">
-                    <template x-for="unit in timeUnits" :key="unit">
-                        <template x-if="showUnit(unit)">
-                            <div class="flex items-center">
-                                <div class="flex flex-col items-center">
-                                    <span x-text="timeValues[unit]"
-                                          class="text-2xl font-bold text-gray-900 dark:text-white"></span>
-                                </div>
-                                <span class="text-xl font-bold mx-1 text-gray-700 dark:text-gray-300"
-                                      x-show="timeUnits.indexOf(unit) < timeUnits.length - 1">:</span>
-                            </div>
-                        </template>
-                    </template>
+        <div x-show="!isTimedOut"
+             class="flex flex-row bg-white/40 dark:bg-gray-900/40 backdrop-blur-lg rounded-xl overflow-hidden p-2 sm:p-4 shadow-xl {{ $compact ? 'space-x-1' : 'space-x-2 sm:space-x-4' }}">
+            <!-- Days -->
+            <div class="flex flex-col items-center {{ $compactClasses }}" x-show="timeValues.days > 0">
+                <div class="flex items-center justify-center text-gray-900 dark:text-gray-200">
+                    <div x-text="timeValues.days" class="relative"></div>
+                </div>
+                <div class="text-center text-gray-900 dark:text-gray-200">
+                    <span>{{ $compact ? 'D' : 'Days' }}</span>
                 </div>
             </div>
-            <div x-show="isTimedOut" class="relative inline-block mt-4 text-center">
-        <span class="relative text-xl font-bold text-red-600 dark:text-red-500">
-            TIMED OUT
-            <span class="absolute inset-0 z-[-1] bg-red-200 dark:bg-red-700 opacity-70 skew-y-[-3deg]"></span>
-        </span>
+
+            <!-- Separator -->
+            <div class="text-gray-900 dark:text-gray-200 {{ $compactClasses }}" x-show="timeValues.days > 0">:</div>
+
+            <!-- Hours -->
+            <div class="flex flex-col items-center {{ $compactClasses }}"
+                 x-show="timeValues.hours > 0 || timeValues.days > 0">
+                <div class="flex items-center justify-center text-gray-900 dark:text-gray-200">
+                    <div x-text="timeValues.hours" class="relative"></div>
+                </div>
+                <div class="text-center text-gray-900 dark:text-gray-200">
+                    <span>{{ $compact ? 'H' : 'Hours' }}</span>
+                </div>
+            </div>
+
+            <!-- Separator -->
+            <div class="text-gray-900 dark:text-gray-200 {{ $compactClasses }}"
+                 x-show="timeValues.hours > 0 || timeValues.days > 0">:
+            </div>
+
+            <!-- Minutes -->
+            <div class="flex flex-col items-center {{ $compactClasses }}">
+                <div class="flex items-center justify-center text-gray-900 dark:text-gray-200">
+                    <div x-text="timeValues.minutes" class="relative"></div>
+                </div>
+                <div class="text-center text-gray-900 dark:text-gray-200">
+                    <span>{{ $compact ? 'M' : 'Minutes' }}</span>
+                </div>
+            </div>
+
+            <!-- Separator -->
+            <div class="text-gray-900 dark:text-gray-200 {{ $compactClasses }}">:</div>
+
+            <!-- Seconds -->
+            <div class="flex flex-col items-center {{ $compactClasses }}">
+                <div class="flex items-center justify-center text-gray-900 dark:text-gray-200">
+                    <div x-text="timeValues.seconds" class="relative"></div>
+                </div>
+                <div class="text-center text-gray-900 dark:text-gray-200">
+                    <span>{{ $compact ? 'S' : 'Seconds' }}</span>
+                </div>
             </div>
         </div>
 
+        <!-- Timed Out Message -->
+        <div x-show="isTimedOut"
+             class="flex items-center justify-center bg-white/40 dark:bg-gray-900/40 backdrop-blur-lg rounded-xl overflow-hidden p-2 sm:p-4 shadow-xl space-x-2">
+
+            <x-heroicon-c-clock class="w-5 h-5 text-red-600 dark:text-red-500" />
+            <span class="text-l font-bold text-red-600 dark:text-red-500">
+        TIMED OUT
+    </span>
+        </div>
 
     </div>
 
@@ -79,11 +119,6 @@
 
           padZero (value) {
             return value < 10 ? `0${value}` : value.toString();
-          },
-
-          showUnit (unit) {
-            const index = this.timeUnits.indexOf(unit);
-            return this.timeUnits.slice(0, index + 1).some(u => parseInt(this.timeValues[u]) > 0);
           }
         };
       }

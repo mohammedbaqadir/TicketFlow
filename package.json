@@ -19,6 +19,9 @@
     },
     "dependencies": {
         "@alpinejs/focus": "^3.14.1",
-        "flowbite": "^2.4.1"
+        "@toast-ui/editor": "^3.2.2",
+        "dompurify": "^3.1.6",
+        "flowbite": "^2.4.1",
+        "highlight.js": "^11.10.0"
     }
 }

@@ -27,12 +27,7 @@
                 $answerData = $this->prepareAnswerData( $data );
                 $answer = $this->repository->create( $answerData );
 
-                if ( isset( $data['attachment'] ) ) {
-                    $this->handleAttachments( $answer, $data['attachment'] );
-                }
-
                 $answer->ticket->update( [ 'status' => 'awaiting-acceptance' ] );
-
                 return $answer->fresh( [ 'submitter', 'ticket', 'comments' ] );
             } );
         }
@@ -48,11 +43,10 @@
                 $answerData = $this->prepareAnswerData( $data, false );
                 $this->repository->update( $answer, $answerData );
 
-                $this->handleAttachmentUpdates( $answer, $data );
-
                 return $answer->fresh( [ 'submitter', 'ticket', 'comments' ] );
             } );
         }
+
 
         public function delete( int $id ) : bool
         {
@@ -99,24 +93,4 @@
             return $answerData;
         }
 
-        private function handleAttachmentUpdates( Answer $answer, array $data ) : void
-        {
-            if ( isset( $data['delete_attachment_id'] ) ) {
-                $this->deleteAttachments( $answer, $data['delete_attachment_id'] );
-            }
-
-            if ( isset( $data['attachment'] ) ) {
-                $this->handleAttachments( $answer, $data['attachment'] );
-            }
-        }
-
-        private function handleAttachments( Answer $answer, $attachment ) : void
-        {
-            $answer->addMedia( $attachment )->toMediaCollection( 'answer_attachments' );
-        }
-
-        private function deleteAttachments( Answer $answer, $attachmentId ) : void
-        {
-            $answer->media()->where( 'id', $attachmentId )->first()?->delete();
-        }
     }

@@ -8,16 +8,17 @@
 
     class StoreTicketRequest extends FormRequest
     {
-        public function authorize(): bool
+        public function authorize() : bool
         {
             return $this->user()->can( 'create', Ticket::class );
         }
 
-        public function rules(): array
+        public function rules() : array
         {
             return [
                 'title' => [ 'required', 'string', 'max:255' ],
                 'description' => [ 'required', 'string' ],
             ];
         }
+
     }

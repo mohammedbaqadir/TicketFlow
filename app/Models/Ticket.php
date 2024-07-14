@@ -14,17 +14,11 @@
     use Laravel\Scout\Searchable;
     use Spatie\Activitylog\LogOptions;
     use Spatie\Activitylog\Traits\LogsActivity;
-    use Spatie\EloquentSortable\Sortable;
-    use Spatie\EloquentSortable\SortableTrait;
-    use Spatie\MediaLibrary\HasMedia;
-    use Spatie\MediaLibrary\InteractsWithMedia;
 
     #[ObservedBy( [ TicketObserver::class ] )]
-    class Ticket extends Model implements HasMedia, Sortable
+    class Ticket extends Model
     {
-        use InteractsWithMedia;
         use LogsActivity;
-        use SortableTrait;
         use SoftDeletes;
         use Searchable;
 
@@ -35,10 +29,6 @@
 
         protected $casts = [
             'timeout_at' => 'datetime',
-        ];
-
-        public $sortable = [
-            'order_column_name' => 'created_at',
         ];
 
         // Relationships
@@ -67,23 +57,6 @@
             return $this->morphMany( Comment::class, 'commentable' );
         }
 
-        // Scopes
-        public function scopeUnassigned( $query )
-        {
-            return $query->whereNull( 'assignee_id' );
-        }
-
-        public function scopeOverdue( $query )
-        {
-            return $query->where( 'status', '!=', 'resolved' )
-                ->where( 'timeout_at', '<', now() );
-        }
-
-        public function scopeResolved( $query )
-        {
-            return $query->where( 'status', 'resolved' );
-        }
-
         // Accessors & Mutators
         public function getFormattedStatusAttribute() : string
         {
@@ -93,12 +66,6 @@
         public function getFormattedPriorityAttribute() : string
         {
             return config( "enums.ticket_priority.{$this->priority}" );
-        }
-
-        // Media
-        public function registerMediaCollections() : void
-        {
-            $this->addMediaCollection( 'ticket_attachments' );
         }
 
         // Activity Log

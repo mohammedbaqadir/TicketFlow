@@ -64,7 +64,7 @@
             $commentData = [ 'content' => $data['content'] ];
 
             if ( $isNewComment ) {
-                $commentData['user_id'] = auth()->id();
+                $commentData['commenter_id'] = auth()->id();
                 $commentData['commentable_id'] = $data['commentable_id'];
                 $commentData['commentable_type'] = $data['commentable_type'];
             }

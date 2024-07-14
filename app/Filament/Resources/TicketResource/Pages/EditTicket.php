@@ -5,8 +5,10 @@
 
     use App\Filament\Resources\TicketResource;
     use App\Models\Ticket;
+    use App\Repositories\TicketRepository;
     use App\Services\TicketService;
     use Filament\Actions\DeleteAction;
+    use Filament\Forms\Components\MarkdownEditor;
     use Filament\Forms\Components\Select;
     use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
     use Filament\Forms\Components\Textarea;
@@ -32,15 +34,11 @@
         {
             return $form->schema( [
                 TextInput::make( 'title' )
+                    ->required()
                     ->maxLength( 255 ),
-                Textarea::make( 'description' ),
-                SpatieMediaLibraryFileUpload::make( 'attachments' )
-                    ->collection( 'ticket_attachments' )
-                    ->multiple()
-                    ->label( 'Attachments' )
-                    ->acceptedFileTypes( [ 'image/jpeg', 'image/png', 'image/gif' ] ),
-                Select::make( 'priority' )
-                    ->options( Ticket::getFormattedPriorityMappings() )
+                MarkdownEditor::make( 'description' )
+                    ->required()
+                    ->disableToolbarButtons( [ 'attachFiles' ] ),
             ] );
         }
 
@@ -52,7 +50,7 @@
          */
         protected function mutateFormDataBeforeSave( array $data ) : array
         {
-            $ticketService = app( TicketService::class );
+            $ticketService = new TicketService( new TicketRepository( new Ticket() ) );
 
             $data['priority'] = $ticketService->determinePriority( $data['title'], $data['description'] );
             $data['timeout_at'] = now()->addHours( $ticketService->determineTimeout( $data['priority'] ) );

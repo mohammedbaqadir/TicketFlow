@@ -5,6 +5,7 @@
 
     use App\Http\Requests\StoreTicketRequest;
     use App\Http\Requests\UpdateTicketRequest;
+    use App\Models\Answer;
     use App\Models\Ticket;
     use App\Services\TicketService;
     use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -23,40 +24,47 @@
         public function __construct( TicketService $service )
         {
             $this->service = $service;
-            $this->authorizeResource( Ticket::class, 'ticket' );
         }
 
         public function index( Request $request ) : View
         {
-            $tickets = $this->service->getAll( $request->only( [ 'filters', 'sort', 'per_page' ] ) );
+            $this->authorize( 'viewAny', Ticket::class );
+            $tickets = $this->service->getAll( [ 'relations' => [ 'requestor', 'assignee' ] ] );
             return view( 'tickets.index', compact( 'tickets' ) );
         }
 
         public function create() : View
         {
+            $this->authorize( 'create', Ticket::class );
             return view( 'tickets.create' );
         }
 
         public function store( StoreTicketRequest $request ) : RedirectResponse
         {
+            $this->authorize( 'create', Ticket::class );
             $ticket = $this->service->create( $request->validated() );
+
             return redirect()->route( 'tickets.show', $ticket )
                 ->with( 'success', __( 'tickets.created_successfully' ) );
         }
 
         public function show( Ticket $ticket ) : View
         {
+            $this->authorize( 'view', $ticket );
+
             $ticket->load( [ 'requestor', 'assignee', 'answers', 'comments' ] );
             return view( 'tickets.show', compact( 'ticket' ) );
         }
 
         public function edit( Ticket $ticket ) : View
         {
+            $this->authorize( 'update', $ticket );
             return view( 'tickets.edit', compact( 'ticket' ) );
         }
 
         public function update( UpdateTicketRequest $request, Ticket $ticket ) : RedirectResponse
         {
+            $this->authorize( 'update', $ticket );
             $updatedTicket = $this->service->update( $ticket->id, $request->validated() );
             return redirect()->route( 'tickets.show', $updatedTicket )
                 ->with( 'success', __( 'tickets.updated_successfully' ) );
@@ -64,8 +72,9 @@
 
         public function destroy( Ticket $ticket ) : RedirectResponse
         {
+            $this->authorize( 'delete', $ticket );
             $this->service->delete( $ticket->id );
-            return redirect()->route( 'tickets.index' )
+            return redirect()->route( 'home' )
                 ->with( 'success', __( 'tickets.deleted_successfully' ) );
         }
 
@@ -90,7 +99,7 @@
         {
             $this->authorize( 'unassign', $ticket );
             $this->service->unassignTicket( $ticket );
-            return redirect()->route( 'tickets.show', $ticket )
+            return redirect()->route( 'tickets.index')
                 ->with( 'success', __( 'tickets.unassigned_successfully' ) );
         }
     }

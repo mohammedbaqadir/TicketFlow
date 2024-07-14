@@ -19,11 +19,12 @@
          *
          * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
          */
-        public function rules(): array
+        public function rules() : array
         {
             return [
                 'title' => [ 'sometimes', 'string', 'max:255' ],
                 'description' => [ 'sometimes', 'string' ],
             ];
         }
+
     }

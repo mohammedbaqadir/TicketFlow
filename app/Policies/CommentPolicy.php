@@ -3,6 +3,7 @@
 
     namespace App\Policies;
 
+    use App\Helpers\AuthHelper;
     use App\Models\Comment;
     use App\Models\User;
 
@@ -11,7 +12,7 @@
 
         public function delete( User $user, Comment $comment ) : bool
         {
-            return $comment->isCommenter( $user );
+            return AuthHelper::userIsCommenter( $comment);
         }
 
 

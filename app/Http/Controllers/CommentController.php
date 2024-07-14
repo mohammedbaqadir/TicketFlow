@@ -18,19 +18,18 @@
     {
         use AuthorizesRequests;
 
-        private CommentService $commentService;
+        private CommentService $service;
 
-        public function __construct( CommentService $commentService )
+        public function __construct( CommentService $service )
         {
-            $this->commentService = $commentService;
-            $this->authorizeResource( Comment::class, 'comment' );
+            $this->service = $service;
         }
 
         public function storeOnTicket( StoreCommentRequest $request, Ticket $ticket ) : RedirectResponse
         {
-            $comment = $this->commentService->createOnTicket( array_merge( $request->validated(), [
+            $comment = $this->service->createOnTicket( array_merge( $request->validated(), [
                 'commentable_id' => $ticket->id,
-                'commentable_type' => get_class( $ticket )
+                'commentable_type' => \get_class( $ticket )
             ] ) );
             return redirect()->route( 'tickets.show', $ticket )
                 ->with( 'success', __( 'comments.created_successfully' ) );
@@ -38,9 +37,9 @@
 
         public function storeOnAnswer( StoreCommentRequest $request, Answer $answer ) : RedirectResponse
         {
-            $comment = $this->commentService->createOnAnswer( array_merge( $request->validated(), [
+            $comment = $this->service->createOnAnswer( array_merge( $request->validated(), [
                 'commentable_id' => $answer->id,
-                'commentable_type' => get_class( $answer )
+                'commentable_type' => \get_class( $answer )
             ] ) );
             return redirect()->route( 'tickets.show', $answer->ticket )
                 ->with( 'success', __( 'comments.created_successfully' ) );
@@ -49,7 +48,8 @@
 
         public function destroy( Comment $comment ) : RedirectResponse
         {
-            $this->commentService->delete( $comment->id );
+            $this->authorize( 'delete', $comment );
+            $this->service->delete( $comment->id );
             return back()->with( 'success', __( 'comments.deleted_successfully' ) );
         }
     }

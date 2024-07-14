@@ -28,7 +28,7 @@
                     ->log( "Ticket is {$ticket->formatted_status}" );
             }
 
-            if ( isset( $changes['assigned_to'] ) ) {
+            if ( isset( $changes['assignee_id'] ) ) {
                 $assignee = $ticket->assignee->name ?? 'Unassigned';
                 if ( $assignee !== 'Unassigned' ) {
                     activity()

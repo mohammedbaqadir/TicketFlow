@@ -9,8 +9,11 @@
     use App\Filament\Resources\TicketResource\Pages\ViewTicket;
     use App\Models\Ticket;
     use App\Models\User;
+    use App\Repositories\TicketRepository;
     use App\Services\TicketService;
     use Exception;
+    use Filament\Forms\Components\MarkdownEditor;
+    use \Filament\Forms\Form;
     use Filament\Forms\Components\Select;
     use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
     use Filament\Forms\Components\Textarea;
@@ -59,21 +62,16 @@
             return self::getTicketsNavigationItems();
         }
 
-        public static function form( $form ) : \Filament\Forms\Form
+        public static function form( $form ) : Form
         {
             return $form
                 ->schema( [
                     TextInput::make( 'title' )
                         ->required()
                         ->maxLength( 255 ),
-                    Textarea::make( 'description' )
-                        ->required(),
-                    Select::make( 'priority' )
-                        ->options( Ticket::getFormattedPriorityMappings() ),
-                    SpatieMediaLibraryFileUpload::make( 'attachments' )
-                        ->collection( 'ticket_attachments' )
-                        ->multiple()
-                        ->label( 'Attachments' )
+                    MarkdownEditor::make( 'description' )
+                        ->required()
+                        ->disableToolbarButtons(['attachFiles']),
                 ] );
         }
 
@@ -99,16 +97,16 @@
                 ] )
                 ->filters( [
                     SelectFilter::make( 'status' )
-                        ->options( Ticket::getFormattedStatusMappings() ),
+                        ->options( array_flip( config( 'enums.ticket_status')) ),
 
                     SelectFilter::make( 'priority' )
-                        ->options( Ticket::getFormattedPriorityMappings() ),
+                        ->options( array_flip( config( 'enums.ticket_priority' ) ) ),
 
                 ] )
                 ->actions( [
                     Action::make( 'assignTicket' )
                         ->label( 'Assign Ticket' )
-                        ->visible( fn( Ticket $record ) => $record->assigned_to === null )
+                        ->visible( fn( Ticket $record ) => $record->assignee_id === null )
                         ->form( function () : array {
                             return [
                                 Select::make( 'action' )
@@ -128,15 +126,26 @@
                         } )
                         ->action( function ( array $data, Ticket $record ) {
                             if ( $data['action'] === 'assign_to_self' ) {
-                                ( new TicketService() )->assignTicket( $record, auth()->user() );
+                                ( new TicketService(new TicketRepository( $record)) )->assignTicket( $record, auth()->user() );
                             } elseif ( $data['action'] === 'assign_to_agent' ) {
                                 $agent = User::findOrFail( $data['agent_id'] );
-                                ( new TicketService() )->assignTicket( $record, $agent, 'Admin' );
+                                ( new TicketService(new TicketRepository( $record)) )->assignTicket( $record, $agent );
                             }
 
                             return redirect()->route( 'filament.app.resources.tickets.view', $record );
                         } )
                         ->modalHeading( 'Assign Ticket' )
+                        ->modalSubmitActionLabel( 'Confirm' )
+                        ->modalWidth( 'lg' ),
+                    Action::make( 'unassignTicket' )
+                        ->label( 'Un-Assign Ticket' )
+                        ->visible( fn( Ticket $record ) => $record->assignee_id !== null )
+                        ->requiresConfirmation()
+                        ->action( function ( array $data, Ticket $record ) {
+                            ( new TicketService(new TicketRepository( $record)) )->unassignTicket( $record );
+                            return redirect()->route( 'filament.app.resources.tickets.index' );
+                        } )
+                        ->modalHeading( 'Un-Assign Ticket' )
                         ->modalSubmitActionLabel( 'Confirm' )
                         ->modalWidth( 'lg' ),
 
@@ -169,8 +178,8 @@
         private static function getTicketsNavigationItems() : array
         {
             $nav_items = [];
-            $mappings = Ticket::getFormattedStatusMappings();
-            foreach ( $mappings as  $label => $status ) {
+            $mappings = config( 'enums.ticket_status');
+            foreach ( $mappings as  $status => $label ) {
                 $nav_items[] = self::createNavigationItem( $label, $status );
             }
             return $nav_items;

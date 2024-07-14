@@ -26,11 +26,7 @@
         public function rules() : array
         {
             return [
-                'content' => [ 'required', 'string' ],
-                'commentable_id' => [ 'required', 'integer' ],
-                'commentable_type' => [
-                    'required', 'string', Rule::in( [ Ticket::class, Answer::class ] )
-                ],
+                'content' => [ 'required', 'string' ]
             ];
         }
     }

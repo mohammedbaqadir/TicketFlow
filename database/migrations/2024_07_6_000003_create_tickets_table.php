@@ -11,16 +11,15 @@
          */
         public function up(): void
         {
-            Schema::create( 'tickets', function ( Blueprint $table ) {
+            Schema::create( 'tickets', static function ( Blueprint $table ) {
                 $table->id();
                 $table->string( 'title' );
-                $table->text( 'description' );
+                $table->longText( 'description' );
                 $table->enum( 'status', [ 'open', 'in-progress', 'awaiting-acceptance', 'escalated', 'resolved' ] );
                 $table->enum( 'priority', [ 'low', 'medium', 'high' ] );
                 $table->dateTime( 'timeout_at' );
                 $table->foreignId( 'requestor_id' )->constrained( 'users' )->onDelete( 'cascade' );
                 $table->foreignId( 'assignee_id' )->nullable()->constrained( 'users' )->onDelete( 'set null' );
-                $table->foreignId( 'accepted_answer_id' )->nullable()->constrained( 'answers' );
                 $table->timestamps();
                 $table->softDeletes();
             });

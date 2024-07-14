@@ -5,6 +5,7 @@
 
     use App\Helpers\AuthHelper;
     use App\Models\Answer;
+    use App\Models\Ticket;
     use App\Models\User;
 
     class AnswerPolicy
@@ -15,16 +16,15 @@
             return AuthHelper::userHasRole( 'admin' ) || AuthHelper::userHasRole( 'agent' );
         }
 
-
         public function update( User $user, Answer $answer ) : bool
         {
-            return $answer->isSubmitter( $user );
+            return AuthHelper::userIsSubmitter( $answer);
         }
 
 
         public function delete( User $user, Answer $answer ) : bool
         {
-            return $answer->isSubmitter( $user );
+            return AuthHelper::userIsSubmitter( $answer );
         }
 
 
@@ -40,6 +40,7 @@
 
         public function accept( User $user, Answer $answer )
         {
-            return $answer->ticket->isRequestor( $user );
+            $ticketOfAnswer = $answer->ticket;
+            return AuthHelper::userIsRequestor( $ticketOfAnswer);
         }
     }

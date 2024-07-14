@@ -8,7 +8,6 @@
     use App\Repositories\TicketRepository;
     use Exception;
     use GeminiAPI\Laravel\Facades\Gemini;
-    use Illuminate\Database\QueryException;
     use Illuminate\Pagination\LengthAwarePaginator;
     use Illuminate\Support\Facades\DB;
     use Illuminate\Support\Facades\Log;
@@ -17,7 +16,7 @@
     {
         protected TicketRepository $repository;
 
-        public function __construct( TicketRepository $repository )
+        public function __construct( TicketRepository $repository ,  )
         {
             $this->repository = $repository;
         }
@@ -42,11 +41,6 @@
             return DB::transaction( function () use ( $data ) {
                 $ticketData = $this->prepareTicketData( $data );
                 $ticket = $this->repository->create( $ticketData );
-
-                if ( isset( $data['attachment'] ) ) {
-                    $this->handleAttachments( $ticket, $data['attachment'] );
-                }
-
                 return $ticket->fresh( [ 'requestor', 'assignee', 'answers', 'comments' ] );
             } );
         }
@@ -62,7 +56,6 @@
                 $ticketData = $this->prepareTicketData( $data, false );
                 $this->repository->update( $ticket, $ticketData );
 
-                $this->handleAttachmentUpdates( $ticket, $data );
 
                 return $ticket->fresh( [ 'requestor', 'assignee', 'answers', 'comments' ] );
             } );
@@ -75,7 +68,6 @@
                 if ( !$ticket ) {
                     throw new \Exception( "Ticket with ID {$id} not found" );
                 }
-
                 return $this->repository->delete( $ticket );
             } );
         }
@@ -138,37 +130,18 @@
                 $ticketData['status'] = 'open';
             }
 
-            return $ticketData;
+            return array_filter( $ticketData, static function ( $value ) {
+                return $value !== null;
+            } );
         }
 
-        private function determineTimeout( string $priority ) : int
+        public function determineTimeout( string $priority ) : int
         {
             return match ( $priority ) {
                 'high' => 2,
                 'medium' => 4,
                 default => 8,
             };
-        }
-
-        private function handleAttachmentUpdates( Ticket $ticket, array $data ) : void
-        {
-            if ( isset( $data['delete_attachment_id'] ) ) {
-                $this->deleteAttachments( $ticket, $data['delete_attachment_id'] );
-            }
-
-            if ( isset( $data['attachment'] ) ) {
-                $this->handleAttachments( $ticket, $data['attachment'] );
-            }
-        }
-
-        private function handleAttachments( Ticket $ticket, $attachment ) : void
-        {
-            $ticket->addMedia( $attachment )->toMediaCollection( 'ticket_attachments' );
-        }
-
-        private function deleteAttachments( Ticket $ticket, $attachmentId ) : void
-        {
-            $ticket->media()->where( 'id', $attachmentId )->first()?->delete();
         }
 
         public function determinePriority( string $title, string $description ) : string

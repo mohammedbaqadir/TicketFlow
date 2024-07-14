@@ -17,17 +17,6 @@
          */
         public function register(): void
         {
-            $this->app->singleton( TicketService::class, function ( $app ) {
-                return new TicketService();
-            } );
-
-            $this->app->singleton( AnswerService::class, function ( $app ) {
-                return new AnswerService();
-            } );
-
-            $this->app->singleton( CommentService::class, function ( $app ) {
-                return new CommentService();
-            } );
         }
 
         /**

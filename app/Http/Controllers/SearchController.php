@@ -32,9 +32,9 @@
             $userRole = $this->getUserRole();
 
             if ( $userRole === 'employee' ) {
-                $result = $this->searchTickets( $query, $user->id, [ 'created_by', 'assigned_to' ] );
+                $result = $this->searchTickets( $query, $user->id, [ 'created_by', 'assignee_id' ] );
             } elseif ( $userRole === 'agent' ) {
-                $result = $this->searchTickets( $query, $user->id, [ 'assigned_to', null ] );
+                $result = $this->searchTickets( $query, $user->id, [ 'assignee_id', null ] );
             }
 
             return $result;
@@ -83,7 +83,7 @@
                         'excerpt' => $excerpt,
                         'created_at' => $ticket->created_at,
                         'created_by' => $ticket->requestor->name,
-                        'assigned_to' => $ticket->assigned_to ? User::find( $ticket->assigned_to )->name : 'Unassigned',
+                        'assignee_id' => $ticket->assignee_id ? User::find( $ticket->assignee_id )->name : 'Unassigned',
                     ];
                 } );
         }

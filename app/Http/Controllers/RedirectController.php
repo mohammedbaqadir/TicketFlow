@@ -1,17 +1,19 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Http\Controllers;
 
 
-    use Illuminate\Support\Facades\Route;
+    use Illuminate\Http\RedirectResponse;
+    use Illuminate\Routing\Route;
 
     class RedirectController extends Controller
     {
-        public function redirect()
+        public function redirect() : RedirectResponse
         {
             $route = match ( auth()->user()->role ) {
                 'admin' => 'filament.app.pages.dashboard',
-//                'agent' => 'filament.app.resources.tickets.index',
+                'agent' => 'tickets.index',
                 'employee' => 'my-tickets',
             };
             return redirect()->route( $route );

@@ -5,8 +5,8 @@
             'open' => 'OPEN',
             'in-progress' => 'IN PROGRESS',
             'awaiting-acceptance' => 'AWAITING ACCEPTANCE',
-            'elevated' => 'ELEVATED',
-            'closed' => 'CLOSED',
+            'escalated' => 'ESCALATED',
+            'resolved' => 'RESOLVED',
         ],
         'ticket_priority' => [
             'low' => 'LOW',

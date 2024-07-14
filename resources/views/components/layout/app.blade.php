@@ -12,6 +12,7 @@
         <link rel="icon" type="image/png" sizes="16x16" href="{{asset('favicon-16x16.png')}}">
         <link rel="manifest" href="{{asset('site.webmanifest')}}">
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @stack('styles')
     </head>
     <body class="font-sans antialiased bg-gray-50 dark:bg-gray-900">
         <div class="antialiased bg-gray-50 dark:bg-gray-900">
@@ -29,5 +30,6 @@
                 </div>
             </main>
         </div>
+        @stack('scripts')
     </body>
 </html>

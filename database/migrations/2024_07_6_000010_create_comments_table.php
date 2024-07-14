@@ -14,7 +14,7 @@
             Schema::create('comments', function (Blueprint $table) {
                 $table->id();
                 $table->text( 'content' );
-                $table->foreignId( 'user_id' )->constrained();
+                $table->foreignId( 'commenter_id' )->constrained('users');
                 $table->morphs( 'commentable' );
                 $table->timestamps();
                 $table->softDeletes();

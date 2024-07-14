@@ -19,7 +19,6 @@
     "livewire/livewire": "^3.5",
     "meilisearch/meilisearch-php": "^1.9",
     "njxqlus/filament-lightbox": "^3.2",
-    "spatie/eloquent-sortable": "^4.4",
     "spatie/laravel-activitylog": "^4.8",
     "spatie/laravel-medialibrary": "^11.7"
   },

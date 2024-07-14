@@ -4,22 +4,17 @@
     namespace App\Models;
 
     use App\Observers\AnswerObserver;
-    use App\Observers\TicketObserver;
     use Illuminate\Database\Eloquent\Attributes\ObservedBy;
-    use Illuminate\Database\Eloquent\Factories\HasFactory;
     use Illuminate\Database\Eloquent\Model;
     use Illuminate\Database\Eloquent\Relations\BelongsTo;
     use Illuminate\Database\Eloquent\Relations\MorphMany;
     use Illuminate\Database\Eloquent\SoftDeletes;
     use Spatie\Activitylog\LogOptions;
     use Spatie\Activitylog\Traits\LogsActivity;
-    use Spatie\MediaLibrary\HasMedia;
-    use Spatie\MediaLibrary\InteractsWithMedia;
 
     #[ObservedBy( [ AnswerObserver::class ] )]
-    class Answer extends Model implements HasMedia
+    class Answer extends Model
     {
-        use InteractsWithMedia;
         use LogsActivity;
         use SoftDeletes;
 
@@ -45,11 +40,6 @@
         public function scopeAccepted( $query )
         {
             return $query->where( 'is_accepted', true );
-        }
-
-        public function registerMediaCollections() : void
-        {
-            $this->addMediaCollection( 'answer_attachments' );
         }
 
         public function getActivitylogOptions() : LogOptions

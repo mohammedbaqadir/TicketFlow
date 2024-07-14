@@ -12,7 +12,7 @@
     {
         use SoftDeletes;
 
-        protected $fillable = [ 'content', 'user_id', 'commentable_id', 'commentable_type' ];
+        protected $fillable = [ 'content', 'commenter_id', 'commentable_id', 'commentable_type' ];
 
         protected $casts = [
             'created_at' => 'datetime',
@@ -20,7 +20,7 @@
 
         public function commenter() : BelongsTo
         {
-            return $this->belongsTo( User::class, 'user_id' );
+            return $this->belongsTo( User::class, 'commenter_id' );
         }
 
         public function commentable() : MorphTo

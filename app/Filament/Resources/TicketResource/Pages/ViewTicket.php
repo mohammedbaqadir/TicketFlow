@@ -3,15 +3,21 @@
 
     namespace App\Filament\Resources\TicketResource\Pages;
 
+    use App\Helpers\AuthHelper;
     use App\Livewire\SolutionEntry;
     use App\Models\User;
+    use App\Repositories\AnswerRepository;
+    use App\Repositories\TicketRepository;
+    use App\Services\AnswerService;
     use App\Services\SolutionService;
     use Filament\Actions\Action;
     use Filament\Actions\EditAction;
+    use Filament\Forms\Components\MarkdownEditor;
     use Filament\Forms\Components\Select;
     use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
     use Filament\Forms\Components\Textarea;
     use Filament\Infolists\Components\Livewire;
+    use Filament\Infolists\Components\RepeatableEntry;
     use Filament\Infolists\Components\Section;
     use Filament\Infolists\Components\Split;
     use Filament\Infolists\Components\Tabs;
@@ -64,33 +70,24 @@
                                 Tab::make( 'Details' )
                                     ->icon( 'heroicon-o-question-mark-circle' )
                                     ->schema( [
-                                        TextEntry::make( 'description' )->label( 'Description' ),
+                                        TextEntry::make( 'description' )->label( 'Description' )->markdown()->columnSpanFull(),
                                         TextEntry::make( 'formatted_status' )->label( 'Status' ),
                                         TextEntry::make( 'formatted_priority' )->label( 'Priority' ),
                                         TextEntry::make( 'requestor.name' )->label( 'Created By' ),
                                         TextEntry::make( 'assignee.name' )->label( 'Assigned To' ),
                                     ] ),
-                                Tab::make( 'Attachments' )
-                                    ->icon( 'heroicon-o-photo' )
-                                    ->schema( [
-                                        LightboxSpatieMediaLibraryImageEntry::make( 'attachments' )
-                                            ->collection( 'ticket_attachments' )
-                                            ->label( 'Attachments' )->conversion( 'thumb' )->columnSpan( 'full' )
-                                    ] ),
-                                Tab::make( 'Solutions' )
+                                Tab::make( 'Answer' )
                                     ->icon( 'heroicon-o-document-text' )
-                                    ->badge( $this->record->solutions()->count() )
+                                    ->badge( $this->record->answers()->count() )
                                     ->schema( function () {
-                                        $solutions = $this->record->solutions()->get()->toArray();
-                                        $solution_entries = [];
-                                        foreach ( $solutions as $solution ) {
-                                            $solution_entries[] = Livewire::make( SolutionEntry::class,
-                                                [ 'solution' => $solution ] );
-                                        }
-                                        return $solution_entries;
-                                    } ),
-                            ] )
-                    ] )->grow( true ),
+                                        return
+                                        RepeatableEntry::make('answers')
+                                            ->schema( [
+                                            TextEntry::make( 'author.name' ),
+                                            TextEntry::make( 'title' ),
+                                            TextEntry::make( 'content' )->columnSpanFull()
+                                        ]);})
+                                    ->grow( true ),])]),
                     Section::make( [
                         TextEntry::make( 'id' )->label( 'Ticket ID' ),
                         TextEntry::make( 'created_at' )->label( 'Created At' )->dateTime(),
@@ -109,111 +106,51 @@
         protected function getHeaderActions() : array
         {
             $actions = [
-                Action::make( 'unassign' )
-                    ->label( 'Un-Assign' )
-                    ->visible( fn() => $this->record->isAssignee( auth()->user() ) )
-                    ->action( function () {
-                        if ( $this->record instanceof Ticket ) {
-                            ( new TicketService() )->unassignTicket( $this->record );
-
-                            Notification::make()
-                                ->title( 'Success' )
-                                ->body( 'You have been unassigned from the ticket.' )
-                                ->success()
-                                ->send();
-                        }
+                Action::make( 'unassignTicket' )
+                    ->label( 'Un-Assign Ticket' )
+                    ->visible( fn( Ticket $record ) => $record->assignee_id !== null )
+                    ->requiresConfirmation()
+                    ->action( function ( array $data, Ticket $record ) {
+                        ( new TicketService( new TicketRepository( $record ) ) )->unassignTicket( $record );
+                        return redirect()->route( 'filament.app.resources.tickets.view', $record );
                     } )
-                    ->color( 'danger' )
-                    ->requiresConfirmation(),
+                    ->modalHeading( 'Un-Assign Ticket' )
+                    ->modalSubmitActionLabel( 'Confirm' )
+                    ->modalWidth( 'lg' ),
                 Action::make( 'delete' )
                     ->label( 'Delete' )
                     ->action( function () {
-                        if ( $this->record instanceof Ticket ) {
-                            $ticket = Ticket::find( $this->record->getKey() );
-                            if ( $ticket ) {
-                                $ticket->delete();
+                        (new TicketService( new TicketRepository( $this->record )))->delete( $this->record->getKey());
                                 Notification::make()
                                     ->title( 'Deleted' )
                                     ->body( 'The Ticket Has Been Deleted' )
                                     ->success()
                                     ->send();
                                 return redirect()->route( 'filament.app.resources.tickets.index' );
-                            } else {
-                                Notification::make()
-                                    ->title( 'Error' )
-                                    ->body( 'The Ticket no longer exists' )
-                                    ->danger()
-                                    ->send();
-                            }
-                        } else {
-                            Notification::make()
-                                ->title( 'Error' )
-                                ->body( 'Invalid Ticket' )
-                                ->danger()
-                                ->send();
-                        }
-                    } )
-                    ->color( 'danger' )
+                        } )
                     ->requiresConfirmation(),
-
-                Action::make( 'assign-another' )
-                    ->label( 'Assign a Different Agent' )
-                    ->visible( fn() => !( $this->record->isAssignee( auth()->user() ) ))
-                    ->form( function ( Ticket $record ) : array {
-                        $formSchema = [];
-                        $formSchema[] = Select::make( 'action' )
-                            ->label( 'Action' )
-                            ->options( [
-                                'assign_to_self' => 'Assign to Myself',
-                                'assign_to_agent' => 'Assign to Agent',
-                            ] )
-                            ->reactive()
-                            ->required();
-                        $formSchema[] = Select::make( 'agent_id' )
-                            ->label( 'Assign to Agent' )
-                            ->options( User::isAgent()->pluck( 'name', 'id' ) )
-                            ->visible( fn( $get ) => $get( 'action' ) === 'assign_to_agent' )
-                            ->required( fn( $get ) => $get( 'action' ) === 'assign_to_agent' );
-                        return $formSchema;
-                    } )
-                    ->action( function ( array $data, Ticket $record) {
-                        ( new TicketService() )->unassignTicket( $record );
-                        if ( $data['action'] === 'assign_to_self' ) {
-                            ( new TicketService() )->assignTicket( $record, auth()->user() );
-                        } elseif ( $data['action'] === 'assign_to_agent' ) {
-                            $agent = User::findOrFail( $data['agent_id'] );
-                            ( new TicketService() )->assignTicket( $record, $agent, 'Admin' );
-                        }
-
-                        return redirect()->route( 'filament.app.resources.tickets.view', $record );
-                    } )
-                    ->color( 'danger' )
-                    ->modalHeading('Assign Ticket' )
-                    ->modalSubmitActionLabel( 'Assign' )
-                    ->modalWidth( 'lg' ),
                 Action::make( 'submitSolution' )
                     ->label( 'Submit a Solution' )
                     ->color( 'success' )
                     ->visible( fn(
-                    ) => $this->record->isAssignee( auth()->user() ) && $this->record->status !== 'closed' )
+                    ) => AuthHelper::userIsAssignee( $this->record ) && $this->record->status !== 'resolved' )
                     ->form( [
-                        Textarea::make( 'content' )
-                            ->label( 'Solution Content' )
-                            ->required(),
-                        SpatieMediaLibraryFileUpload::make( 'solution_attachments' )
-                            ->collection( 'solution_attachments' )
-                            ->multiple()
-                            ->label( 'Attachments' )
+                        MarkdownEditor::make( 'content' )
+                            ->label( 'Answer' )
+                            ->required()
+                            ->disableToolbarButtons( [ 'attachFiles' ] ),
                     ] )
                     ->action( function ( array $data ) {
-                        ( new SolutionService() )->submitSolution( $this->record, auth()->user(), $data );
+                        ( new AnswerService( new AnswerRepository( $this->record)) )->create( [
+                            'content' => $data['content'],
+                            'ticket_id' => $this->record->getKey() ] );
                         Notification::make()
                             ->title( 'Success' )
-                            ->body( 'Solution submitted successfully.' )
+                            ->body( 'Answer submitted successfully.' )
                             ->success()
                             ->send();
                     } )
-                    ->modalHeading( 'Submit a Solution' )
+                    ->modalHeading( 'Submit an Answer' )
                     ->modalSubmitActionLabel( 'Submit' )
                     ->modalWidth( 'lg' ),
                 EditAction::make( 'Edit' ),

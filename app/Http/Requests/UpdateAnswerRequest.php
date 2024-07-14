@@ -1,4 +1,5 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Http\Requests;
 
@@ -22,7 +23,8 @@
         public function rules() : array
         {
             return [
-                'content' => [ 'required', 'string' ],
+                'content' => [ 'required', 'string', 'max:65535' ],
             ];
         }
+
     }

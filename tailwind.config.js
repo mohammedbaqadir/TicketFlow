@@ -37,8 +37,23 @@ export default {
           "900": "#1e3a8a",
           "950": "#172554"
         }
-      }
+      },
+      boxShadow: {
+        'glow-green-400': '0 0 15px rgba(74, 222, 128, 0.5)',
+        'glow-green-600': '0 0 15px rgba(22, 163, 74, 0.5)',
+      },
+
     },
   },
-  plugins: [forms, typography, require('flowbite/plugin')]
+  plugins: [forms, typography, require('flowbite/plugin'), function ({addUtilities}) {
+    const newUtilities = {
+      '.glow-green-400': {
+        boxShadow: '0 0 15px rgba(74, 222, 128, 0.5)',
+      },
+      '.glow-green-600': {
+        boxShadow: '0 0 15px rgba(22, 163, 74, 0.5)',
+      },
+    }
+    addUtilities(newUtilities, ['responsive', 'hover'])
+  },]
 };

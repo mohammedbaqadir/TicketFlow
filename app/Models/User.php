@@ -3,13 +3,9 @@
 
     namespace App\Models;
 
-    use Illuminate\Database\Eloquent\Factories\HasFactory;
     use Illuminate\Database\Eloquent\Relations\HasMany;
     use Illuminate\Database\Eloquent\SoftDeletes;
     use Illuminate\Foundation\Auth\User as Authenticatable;
-    use Illuminate\Notifications\Notifiable;
-    use Spatie\EloquentSortable\Sortable;
-    use Spatie\EloquentSortable\SortableTrait;
     use Spatie\MediaLibrary\HasMedia;
     use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -56,6 +52,7 @@
         {
             $this->addMediaCollection( 'avatar' )
                 ->singleFile()
+                ->onlyKeepLatest(1)
                 ->useFallbackUrl( '/images/default-avatar.jpg' )
                 ->useFallbackPath( public_path( '/images/default-avatar.jpg' ) );
         }

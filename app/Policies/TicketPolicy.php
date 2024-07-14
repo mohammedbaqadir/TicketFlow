@@ -7,7 +7,6 @@
     use App\Models\Ticket;
     use App\Models\User;
     use Illuminate\Auth\Access\HandlesAuthorization;
-    use Illuminate\Auth\Access\Response;
 
     class TicketPolicy
     {
@@ -15,7 +14,8 @@
 
         public function viewAny( User $user ) : bool
         {
-            return true;
+            return AuthHelper::userHasRole( 'admin' )
+                || AuthHelper::userHasRole( 'agent' );
         }
 
         public function view( User $user, Ticket $ticket ) : bool
@@ -25,30 +25,28 @@
             if ( AuthHelper::userHasRole( 'admin' ) ) {
                 $can_view = true;
             } elseif ( AuthHelper::userHasRole( 'agent' ) ) {
-                $can_view = $ticket->isAssignee( $user );
+                $can_view = AuthHelper::userIsAssignee( $ticket);
             } elseif ( AuthHelper::userHasRole( 'employee' ) ) {
-                $can_view = $ticket->isRequestor( $user );
+                $can_view = AuthHelper::userIsRequestor( $ticket);
             }
 
             return $can_view;
         }
-
 
         public function create( User $user ) : bool
         {
             return AuthHelper::userHasRole( 'employee' ) || AuthHelper::userHasRole( 'admin' );
         }
 
-
         public function update( User $user, Ticket $ticket ) : bool
         {
-            return $ticket->status !== 'closed' && $ticket->isRequestor( $user );
+            return $ticket->status !== 'resolved' && AuthHelper::userIsRequestor( $ticket );
         }
 
 
         public function delete( User $user, Ticket $ticket ) : bool
         {
-            return $ticket->isRequestor( $user ) || AuthHelper::userHasRole( 'admin' );
+            return AuthHelper::userIsRequestor( $ticket ) || AuthHelper::userHasRole( 'admin' );
         }
 
 
@@ -63,15 +61,20 @@
             return AuthHelper::userHasRole( 'admin' );
         }
 
-        public function assign( Ticket $ticket ) : bool
+        public function assign( User $user, Ticket $ticket ) : bool
         {
-            return $ticket->assigned_to === null &&
+            return $ticket->assignee_id === null &&
                 AuthHelper::userHasRole( 'agent' );
         }
 
         public function unassign( User $user, Ticket $ticket ) : bool
         {
-            return $ticket->isAssignee( $user);
+            return AuthHelper::userIsAssignee( $ticket );
+        }
+
+        public function answer( User $user, Ticket $ticket ) : bool
+        {
+            return AuthHelper::userIsAssignee( $ticket);
         }
 
 

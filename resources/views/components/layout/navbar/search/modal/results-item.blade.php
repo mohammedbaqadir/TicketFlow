@@ -5,8 +5,8 @@
         <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
             <span x-text="'Created by: ' + (result.created_by || 'Unknown')"></span> |
             <span x-text="'Created at: ' + formatDate(result.created_at)"></span>
-            <template x-if="result.assigned_to">
-                | <span x-text="'Assigned to: ' + result.assigned_to"></span>
+            <template x-if="result.assignee_id">
+                | <span x-text="'Assigned to: ' + result.assignee_id"></span>
             </template>
         </div>
     </a>
