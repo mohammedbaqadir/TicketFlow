@@ -9,10 +9,12 @@
     use App\Models\Ticket;
     use App\Services\TicketService;
     use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+    use Illuminate\Http\JsonResponse;
     use Illuminate\Http\RedirectResponse;
     use Illuminate\Http\Request;
     use Illuminate\Support\Facades\Auth;
     use Illuminate\Support\Facades\Log;
+    use Illuminate\Support\Str;
     use Illuminate\View\View;
 
     class TicketController extends Controller
@@ -54,6 +56,28 @@
 
             $ticket->load( [ 'requestor', 'assignee', 'answers', 'comments' ] );
             return view( 'tickets.show', compact( 'ticket' ) );
+        }
+
+        public function meeting( Ticket $ticket ) : ?JsonResponse
+        {
+            $this->authorize( 'view', $ticket );
+
+            $magicCookie = config( 'services.jitsi.vpaas_magic_cookie' );
+
+            if ( $ticket->meeting_room ) {
+                $roomName = $ticket->meeting_room;
+            } else {
+                $roomName = $magicCookie . '/ticket-' . $ticket->id . '-' . Str::random( 10 );
+
+                $ticket->update( [ 'meeting_room' => $roomName ] );
+            }
+
+            return response()->json( [
+                'roomName' => $roomName,
+                'ticketId' => $ticket->id,
+                'assigneeName' => $ticket->assignee->name ?? null,
+                'requestorName' => $ticket->requestor->name
+            ] );
         }
 
         public function edit( Ticket $ticket ) : View

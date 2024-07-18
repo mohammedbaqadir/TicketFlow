@@ -20,6 +20,7 @@
                 $table->dateTime( 'timeout_at' );
                 $table->foreignId( 'requestor_id' )->constrained( 'users' )->onDelete( 'cascade' );
                 $table->foreignId( 'assignee_id' )->nullable()->constrained( 'users' )->onDelete( 'set null' );
+                $table->string( 'meeting_room')->nullable();
                 $table->timestamps();
                 $table->softDeletes();
             });

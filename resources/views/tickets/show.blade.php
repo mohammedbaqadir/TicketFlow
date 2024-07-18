@@ -8,6 +8,6 @@
             <div class="px-6 pb-6">
                 <x-tickets.show.answers :ticket="$ticket" />
             </div>
-        <x-tickets.show.footer :ticket="$ticket" />
-    </div>
+            <x-tickets.show.footer :ticket="$ticket" />
+        </div>
 @endsection

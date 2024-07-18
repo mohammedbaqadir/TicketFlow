@@ -30,7 +30,7 @@
     </div>
 
     {{-- Content Section --}}
-    <div class="p-6">
+    <div class="p-6 text-gray-800 dark:text-white">
         {!!Str::markdown($answer->content, [
             'html_input' => 'strip',
 ])!!}

@@ -24,7 +24,7 @@
 
         protected $fillable = [
             'title', 'description', 'status', 'priority', 'requestor_id', 'assignee_id', 'timeout_at',
-            'accepted_answer_id'
+            'accepted_answer_id', 'meeting_room'
         ];
 
         protected $casts = [

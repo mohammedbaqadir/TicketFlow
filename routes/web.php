@@ -11,11 +11,13 @@
     Route::middleware( [ 'auth' ] )->group( function () {
         Route::get( '/', [ RedirectController::class, 'redirect' ] )->name( 'home' );
         Route::get( '/search', [ SearchController::class, 'search' ] )->name( 'search' );
-        Route::get( '/newshow/{ticket}', [TicketController::class, 'newshow']);
         Route::resource( 'tickets', TicketController::class );
         Route::get( '/my-tickets', [ TicketController::class, 'myTickets' ] )->name( 'my-tickets' );
         Route::post( 'tickets/{ticket}/assign', [ TicketController::class, 'assign' ] )->name( 'tickets.assign' );
         Route::post( 'tickets/{ticket}/unassign', [ TicketController::class, 'unassign' ] )->name( 'tickets.unassign' );
+        Route::post( '/tickets/{ticket}/meeting',
+            [ TicketController::class, 'meeting' ] )->name( 'tickets.meeting' );
+
 
         Route::resource( 'tickets.answers', AnswerController::class )
             ->except( [ 'index', 'show' ] )
