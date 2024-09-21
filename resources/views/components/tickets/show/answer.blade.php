@@ -22,18 +22,18 @@
             </div>
         </div>
         @if($answer->is_accepted)
-            <div class="flex items-center space-x-1 bg-green-100 dark:bg-green-700 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
-                <x-heroicon-o-check-badge class="w-4 h-4 sm:w-5 sm:h-5 mr-1" />
-                <span>Accepted</span>
-            </div>
+            <x-tooltip content="the Employee Who Opened the Ticket has Accepted this Answer to Resolve the Ticket">
+                <div class="flex items-center space-x-1 bg-green-100 dark:bg-green-700 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
+                    <x-heroicon-o-check-badge class="w-4 h-4 sm:w-5 sm:h-5 mr-1" />
+                    <span>Accepted</span>
+                </div>
+            </x-tooltip>
         @endif
     </div>
 
     {{-- Content Section --}}
     <div class="p-6 text-gray-800 dark:text-white">
-        {!!Str::markdown($answer->content, [
-            'html_input' => 'strip',
-])!!}
+        <x-toast-ui-editor mode="viewer" :content="$answer->content" :id="'answer-' . $answer->id . '-viewer'" />
     </div>
 
     {{-- Actions Section --}}
@@ -42,10 +42,15 @@
             @if(!$answer->is_accepted)
                 <x-modal>
                     <x-slot name="trigger">
-                        <button type="button"
-                                class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition duration-200 transform hover:scale-110 hover:shadow-lg">
-                            <x-heroicon-o-check class="w-5 h-5 sm:w-6 sm:h-6 mr-1" />
-                        </button>
+                        <x-tooltip content="Accept the Answer. <br>Accepting this Answer will <strong>Resolve</strong>
+                        the Ticket, no Further Answers will be Allowed. <br>this <strong>CANNOT</strong> be Undone!"
+                                   icon="exclamation-triangle">
+                            <button type="button"
+                                    class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition duration-200 transform hover:scale-110 hover:shadow-lg">
+                                <x-heroicon-o-check class="w-5 h-5 sm:w-6 sm:h-6 mr-1" />
+                            </button>
+                        </x-tooltip>
+
                     </x-slot>
 
                     <x-slot name="title">Confirm Acceptance</x-slot>
@@ -73,22 +78,29 @@
         @endcan
 
         @can('update', $answer)
-            <a href="{{route('answers.edit', $answer)}}">
-                <button type="button"
-                        class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200
+            <x-tooltip content="Update the Answer">
+                <a href="{{route('answers.edit', $answer)}}">
+                    <button type="button"
+                            class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200
                         transition duration-200 transform hover:scale-110 hover:shadow-lg mb-1.5">
-                    <x-heroicon-o-pencil-square class="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
-            </a>
+                        <x-heroicon-o-pencil-square class="w-5 h-5 sm:w-6 sm:h-6" />
+                    </button>
+                </a>
+            </x-tooltip>
+
         @endcan
 
         @can('delete', $answer)
             <x-modal>
                 <x-slot name="trigger">
-                    <button type="button"
-                            class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition duration-200 transform hover:scale-110 hover:shadow-lg">
-                        <x-heroicon-o-trash class="w-5 h-5 sm:w-6 sm:h-6" />
-                    </button>
+                    <x-tooltip content="Delete the Answer. This <strong>CANNOT</strong> be Undone!"
+                               icon="exclamation-triangle">
+                        <button type="button"
+                                class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition duration-200 transform hover:scale-110 hover:shadow-lg">
+                            <x-heroicon-o-trash class="w-5 h-5 sm:w-6 sm:h-6" />
+                        </button>
+                    </x-tooltip>
+
                 </x-slot>
 
                 <x-slot name="title">Confirm Deletion</x-slot>

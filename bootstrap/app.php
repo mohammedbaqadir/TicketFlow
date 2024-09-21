@@ -1,8 +1,11 @@
 <?php
+    declare( strict_types = 1 );
 
+    use App\Http\Middleware\ApplyUserPreferences;
     use Illuminate\Foundation\Application;
     use Illuminate\Foundation\Configuration\Exceptions;
     use Illuminate\Foundation\Configuration\Middleware;
+    use Illuminate\Http\Middleware\TrustProxies;
 
     return Application::configure( basePath: dirname( __DIR__ ) )
         ->withRouting(
@@ -11,8 +14,12 @@
             health: '/up',
         )
         ->withMiddleware( function ( Middleware $middleware ) {
-            $middleware->alias( [
+            $middleware->web( append: [
+                ApplyUserPreferences::class,
             ] );
+            if ( env( 'APP_ENV' ) === 'production' ) {
+                $middleware->append( TrustProxies::class );
+            }
         } )
         ->withExceptions( function ( Exceptions $exceptions ) {
             //

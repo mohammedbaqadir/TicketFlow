@@ -5,10 +5,19 @@
 
         </div>
         <div class="flex items-center lg:order-2">
-            <x-layout.navbar.search />
-            <x-layout.navbar.notifications.button />
-            <x-layout.navbar.user-menu.button />
-            <x-layout.navbar.dark-mode-toggle />
+            <x-tooltip content="Search Results are Limited to Tickets You're <strong>Allowed</strong> to View"
+                       icon="shield-exclamation">
+                <x-layout.navbar.search />
+            </x-tooltip>
+
+            <x-tooltip content="Manage Profile and Settings">
+                <x-layout.navbar.user-menu.button />
+            </x-tooltip>
+
+            <x-tooltip content="Toggle Dark Mode" icon="information-circle">
+                <x-layout.navbar.dark-mode-toggle />
+            </x-tooltip>
+
         </div>
     </div>
 </nav>

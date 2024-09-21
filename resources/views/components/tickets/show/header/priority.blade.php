@@ -8,10 +8,10 @@
   ];
 
   $priorityIcons = [
-      'low' => 'heroicon-o-arrow-down-circle',
-      'medium' => 'heroicon-o-minus-circle',
-      'high' => 'heroicon-o-arrow-up-circle',
-  ];
+    'low' => 'heroicon-o-signal',
+    'medium' => 'heroicon-o-signal-slash',
+    'high' => 'heroicon-o-bell-alert',
+];
 
   $priorityStyle = $priorityStyles[$priority] ?? $priorityStyles['low'];
   $priorityIcon = $priorityIcons[$priority] ?? $priorityIcons['low'];

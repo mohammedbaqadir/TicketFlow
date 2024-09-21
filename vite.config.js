@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import {defineConfig} from 'vite';
 import laravel, {refreshPaths} from 'laravel-vite-plugin';
 
 export default defineConfig({
@@ -14,6 +14,14 @@ export default defineConfig({
         ...refreshPaths,
         'app/Livewire/**',
       ],
+      build: {
+        rollupOptions: {
+          input: {
+            app: '/resources/js/app.js',
+            pace: '/public/js/pace.min.js',
+          },
+        },
+      },
     }),
   ],
 });

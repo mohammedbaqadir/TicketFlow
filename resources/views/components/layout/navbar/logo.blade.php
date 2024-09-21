@@ -5,7 +5,7 @@
              alt="{{ config('app.name') }} Logo" />
         <div class="absolute inset-0 rounded-full bg-gradient-to-r from-teal-500 to-green-500 opacity-0 dark:opacity-70 blur-lg dark:block"></div>
     </div>
-    <span class="self-center text-4xl font-extrabold text-gray-900 text-transparent bg-clip-text
+    <span class="self-center text-4xl   italic font-extrabold text-gray-900 text-transparent bg-clip-text
     bg-gradient-to-r from-purple-500  to-blue-500 tracking-wide
         dark:from-teal-200 dark:to-green-200 ">
         {{ config('app.name') }}

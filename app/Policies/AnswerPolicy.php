@@ -18,7 +18,7 @@
 
         public function update( User $user, Answer $answer ) : bool
         {
-            return AuthHelper::userIsSubmitter( $answer);
+            return AuthHelper::userIsSubmitter( $answer );
         }
 
 
@@ -41,6 +41,6 @@
         public function accept( User $user, Answer $answer )
         {
             $ticketOfAnswer = $answer->ticket;
-            return AuthHelper::userIsRequestor( $ticketOfAnswer);
+            return AuthHelper::userIsRequestor( $ticketOfAnswer );
         }
     }

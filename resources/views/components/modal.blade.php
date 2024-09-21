@@ -59,9 +59,11 @@
                         x-transition:leave="ease-in duration-200"
                         x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                         x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                        class="inline-block px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white dark:bg-gray-800 rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
-                        :class="{{ $maxWidth }}"
+                        class="inline-block px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all
+                        transform bg-white dark:bg-gray-800 rounded-lg shadow-xl sm:my-8 sm:align-middle sm:w-full
+                        sm:p-6 {{ $maxWidth }} "
                 >
+
                     <div class="absolute top-0 right-0 hidden pt-4 pr-4 sm:block">
                         <button @click="open = false"
                                 type="button"

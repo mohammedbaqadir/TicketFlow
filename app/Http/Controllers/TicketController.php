@@ -3,16 +3,19 @@
 
     namespace App\Http\Controllers;
 
+    use App\Actions\Ticket\AssignTicketAction;
+    use App\Actions\Ticket\CreateTicketAction;
+    use App\Actions\Ticket\DeleteTicketAction;
+    use App\Actions\Ticket\UnassignTicketAction;
+    use App\Actions\Ticket\UpdateTicketAction;
     use App\Http\Requests\StoreTicketRequest;
     use App\Http\Requests\UpdateTicketRequest;
-    use App\Models\Answer;
     use App\Models\Ticket;
-    use App\Services\TicketService;
     use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
     use Illuminate\Http\JsonResponse;
     use Illuminate\Http\RedirectResponse;
     use Illuminate\Http\Request;
-    use Illuminate\Support\Facades\Auth;
+    use Illuminate\Support\Facades\Cache;
     use Illuminate\Support\Facades\Log;
     use Illuminate\Support\Str;
     use Illuminate\View\View;
@@ -21,17 +24,11 @@
     {
         use AuthorizesRequests;
 
-        private TicketService $service;
-
-        public function __construct( TicketService $service )
-        {
-            $this->service = $service;
-        }
-
-        public function index( Request $request ) : View
+        public function index() : View
         {
             $this->authorize( 'viewAny', Ticket::class );
-            $tickets = $this->service->getAll( [ 'relations' => [ 'requestor', 'assignee' ] ] );
+            $tickets = Ticket::withRelations()
+                ->paginate( 10 );
             return view( 'tickets.index', compact( 'tickets' ) );
         }
 
@@ -41,44 +38,99 @@
             return view( 'tickets.create' );
         }
 
-        public function store( StoreTicketRequest $request ) : RedirectResponse
+        public function store( StoreTicketRequest $request, CreateTicketAction $createTicketAction ) : RedirectResponse
         {
             $this->authorize( 'create', Ticket::class );
-            $ticket = $this->service->create( $request->validated() );
+            $ticket = $createTicketAction->execute( $request->validated() );
 
             return redirect()->route( 'tickets.show', $ticket )
-                ->with( 'success', __( 'tickets.created_successfully' ) );
+                ->withToast( 'Created!', 'Your ticket was Created successfully', 'success' );
         }
 
         public function show( Ticket $ticket ) : View
         {
             $this->authorize( 'view', $ticket );
-
-            $ticket->load( [ 'requestor', 'assignee', 'answers', 'comments' ] );
+            $cacheKey = "tickets_show_{$ticket->id}";
+            if ( Cache::has( $cacheKey ) ) {
+                $ticket = Cache::get( $cacheKey );
+            } else {
+                $ticket->withRelations()->with( [ 'answers' ] )->get();
+            }
             return view( 'tickets.show', compact( 'ticket' ) );
         }
 
         public function meeting( Ticket $ticket ) : ?JsonResponse
         {
-            $this->authorize( 'view', $ticket );
+            try {
+                $this->authorize( 'view', $ticket );
+                $magicCookie = config( 'services.jitsi.vpaas_magic_cookie' );
+                if ( !$magicCookie ) {
+                    throw new \RuntimeException( 'Jitsi vpaas_magic_cookie is not configured.' );
+                }
 
-            $magicCookie = config( 'services.jitsi.vpaas_magic_cookie' );
+                $roomName = $ticket->meeting_room ?? $magicCookie . '/ticket-' . $ticket->id . '-' . Str::random( 10 );
+                if ( !$ticket->meeting_room ) {
+                    $ticket->update( [ 'meeting_room' => $roomName ] );
+                }
 
-            if ( $ticket->meeting_room ) {
-                $roomName = $ticket->meeting_room;
-            } else {
-                $roomName = $magicCookie . '/ticket-' . $ticket->id . '-' . Str::random( 10 );
 
-                $ticket->update( [ 'meeting_room' => $roomName ] );
+                return response()->json( [
+                    'roomName' => $roomName,
+                    'ticketId' => $ticket->id,
+                    'assigneeName' => $ticket->assignee->name ?? null,
+                    'requestorName' => $ticket->requestor->name,
+                ] );
+            } catch (\Exception $e) {
+                Log::error( 'Error initializing meeting: ' . $e->getMessage() );
+                return response()->json( [ 'error' => 'Failed to initialize meeting' ], 500 );
+            }
+        }
+
+        /**
+         * Handle a user joining the meeting.
+         *
+         * @param  Request  $request
+         * @return JsonResponse
+         */
+        public function meetingJoined( Request $request ) : JsonResponse
+        {
+            $validated = $request->validate( [
+                'ticketId' => 'required|integer|exists:tickets,id',
+                'meetingLink' => 'required|string',
+                'username' => 'required|string',
+            ] );
+
+            // Retrieve the ticket by its ID
+            $ticket = Ticket::findOrFail( $validated['ticketId'] );
+
+            // Get the names of the requestor and assignee
+            $requestorName = $ticket->requestor->name;
+            $assigneeName = $ticket->assignee->name ?? null;
+
+            // Determine who joined and who is still missing from the meeting
+            $userWhoJoined = $validated['username'];
+            $waitingForUser = null;
+
+            // Check if the user who joined is the requestor, and if the assignee hasn't joined yet
+            if ( $userWhoJoined === $requestorName && $assigneeName ) {
+                $waitingForUser = $assigneeName; // The assignee is still waiting to join
+            } elseif ( $userWhoJoined === $assigneeName ) {
+                $waitingForUser = $requestorName; // The requestor is still waiting to join
+            }
+            Log::info( 'meeting joined triggered: ', [ $userWhoJoined, $waitingForUser ] );
+            // If the other user hasn't joined, return a response indicating this
+            if ( $waitingForUser ) {
+                return response()->json( [
+                    'waitingFor' => $waitingForUser, // Notify this user to join
+                ] );
             }
 
+            // Otherwise, just return a response that the user has joined
             return response()->json( [
-                'roomName' => $roomName,
-                'ticketId' => $ticket->id,
-                'assigneeName' => $ticket->assignee->name ?? null,
-                'requestorName' => $ticket->requestor->name
+                'message' => 'User joined the meeting',
             ] );
         }
+
 
         public function edit( Ticket $ticket ) : View
         {
@@ -86,44 +138,51 @@
             return view( 'tickets.edit', compact( 'ticket' ) );
         }
 
-        public function update( UpdateTicketRequest $request, Ticket $ticket ) : RedirectResponse
-        {
+        public function update(
+            UpdateTicketRequest $request,
+            Ticket $ticket,
+            UpdateTicketAction $updateTicketAction
+        ) : RedirectResponse {
             $this->authorize( 'update', $ticket );
-            $updatedTicket = $this->service->update( $ticket->id, $request->validated() );
+            $updatedTicket = $updateTicketAction->execute( $ticket, $request->validated() );
+
             return redirect()->route( 'tickets.show', $updatedTicket )
-                ->with( 'success', __( 'tickets.updated_successfully' ) );
+                ->withToast( 'Updated!', 'Your ticket was updated successfully.', 'success' );
         }
 
-        public function destroy( Ticket $ticket ) : RedirectResponse
+        public function destroy( Ticket $ticket, DeleteTicketAction $deleteTicketAction ) : RedirectResponse
         {
             $this->authorize( 'delete', $ticket );
-            $this->service->delete( $ticket->id );
+            $deleteTicketAction->execute( $ticket );
+
             return redirect()->route( 'home' )
-                ->with( 'success', __( 'tickets.deleted_successfully' ) );
+                ->withToast( 'Deleted!', 'Your ticket was deleted successfully.', 'danger' );
         }
 
         public function myTickets( Request $request ) : View
         {
-            $tickets = $this->service->getTicketsByUser(
-                $request->user(),
-                $request->only( [ 'filters', 'sort', 'per_page' ] )
-            );
+            $tickets = Ticket::where( 'requestor_id', $request->user()->id )
+                ->withRelations()
+                ->paginate( 10 );
+
             return view( 'tickets.my-tickets', compact( 'tickets' ) );
         }
 
-        public function assign( Ticket $ticket ) : RedirectResponse
+        public function assign( Ticket $ticket, AssignTicketAction $assignTicketAction ) : RedirectResponse
         {
             $this->authorize( 'assign', $ticket );
-            $this->service->assignTicket( $ticket, auth()->user() );
+            $assignTicketAction->execute( $ticket, auth()->user() );
+
             return redirect()->route( 'tickets.show', $ticket )
-                ->with( 'success', __( 'tickets.assigned_successfully' ) );
+                ->withToast( 'Assigned!', 'You have been assigned to the ticket.', 'info' );
         }
 
-        public function unassign( Ticket $ticket ) : RedirectResponse
+        public function unassign( Ticket $ticket, UnassignTicketAction $unassignTicketAction ) : RedirectResponse
         {
             $this->authorize( 'unassign', $ticket );
-            $this->service->unassignTicket( $ticket );
-            return redirect()->route( 'tickets.index')
-                ->with( 'success', __( 'tickets.unassigned_successfully' ) );
+            $unassignTicketAction->execute( $ticket );
+
+            return redirect()->route( 'tickets.index' )
+                ->withToast( 'Un-Assigned!', 'You have been un-assigned to the ticket.', 'info' );
         }
     }

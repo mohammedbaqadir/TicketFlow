@@ -9,28 +9,28 @@
         /**
          * Run the migrations.
          */
-        public function up(): void
+        public function up() : void
         {
             Schema::create( 'tickets', static function ( Blueprint $table ) {
                 $table->id();
                 $table->string( 'title' );
                 $table->longText( 'description' );
                 $table->enum( 'status', [ 'open', 'in-progress', 'awaiting-acceptance', 'escalated', 'resolved' ] );
-                $table->enum( 'priority', [ 'low', 'medium', 'high' ] );
-                $table->dateTime( 'timeout_at' );
+                $table->enum( 'priority', [ 'low', 'medium', 'high' ] )->nullable();
+                $table->dateTime( 'timeout_at' )->nullable()->after( 'priority' );
                 $table->foreignId( 'requestor_id' )->constrained( 'users' )->onDelete( 'cascade' );
                 $table->foreignId( 'assignee_id' )->nullable()->constrained( 'users' )->onDelete( 'set null' );
-                $table->string( 'meeting_room')->nullable();
+                $table->string( 'meeting_room' )->nullable();
                 $table->timestamps();
                 $table->softDeletes();
-            });
+            } );
         }
 
         /**
          * Reverse the migrations.
          */
-        public function down(): void
+        public function down() : void
         {
-            Schema::dropIfExists('tickets');
+            Schema::dropIfExists( 'tickets' );
         }
     };

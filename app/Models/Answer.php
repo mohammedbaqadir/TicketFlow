@@ -32,10 +32,6 @@
             return $this->belongsTo( Ticket::class );
         }
 
-        public function comments() : MorphMany
-        {
-            return $this->morphMany( Comment::class, 'commentable' );
-        }
 
         public function scopeAccepted( $query )
         {

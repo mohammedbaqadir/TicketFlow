@@ -1,3 +1,4 @@
+@php use App\Models\Ticket; @endphp
 @extends('components.layout.app')
 
 @section('content')

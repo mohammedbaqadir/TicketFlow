@@ -1,4 +1,8 @@
 <?php
+    declare( strict_types = 1 );
+
+    use App\Models\Ticket;
+    use Illuminate\Support\Env;
 
     return [
 
@@ -16,9 +20,7 @@
         |
         */
 
-        'driver' => env( 'SCOUT_DRIVER', 'meilisearch' ),
-
-
+        'driver' => Env::getOrFail( 'SCOUT_DRIVER' ),
 
 
         /*
@@ -134,8 +136,13 @@
         */
 
         'meilisearch' => [
-            'host' => env( 'MEILISEARCH_HOST', 'http://localhost:7700' ),
-            'key' => env( 'MEILISEARCH_KEY' ),
+            'host' => Env::get( 'MEILISEARCH_HOST', 'http://localhost:7700' ),
+            'key' => Env::getOrFail( 'MEILISEARCH_KEY' ),
+            'index-settings' => [
+                Ticket::class => [
+                    'filterableAttributes' => [ 'requestor_id' ],
+                ],
+            ],
         ],
 
         /*

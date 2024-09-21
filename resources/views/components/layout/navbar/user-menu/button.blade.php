@@ -8,7 +8,7 @@
     >
         <span class="sr-only">Open user menu</span>
         <img class="w-8 h-8 rounded-full"
-             src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/michael-gough.png"
+             src="{{ Auth::user()->getFirstMediaUrl('avatar') ?: asset('/images/default-avatar.jpg') }}"
              alt="user photo">
     </button>
     <div

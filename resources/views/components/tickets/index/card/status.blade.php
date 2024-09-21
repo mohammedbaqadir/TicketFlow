@@ -11,20 +11,15 @@
     ];
 
     $statusIcons = [
-        'open' => 'heroicon-s-cursor-arrow-rays',
-        'in-progress' => 'heroicon-s-arrow-path',
-        'awaiting-acceptance' => 'heroicon-o-light-bulb',
-        'escalated' => 'heroicon-o-exclamation-triangle',
-        'resolved' => 'heroicon-o-check-circle',
-    ];
+    'open' => 'heroicon-o-envelope-open',
+    'in-progress' => 'heroicon-o-play',
+    'awaiting-acceptance' => 'heroicon-o-clock',
+    'escalated' => 'heroicon-o-arrow-trending-up',
+    'resolved' => 'heroicon-o-check-circle',
+];
 
-    $statusLabels = [
-        'open' => 'OPEN',
-        'in-progress' => 'IN PROGRESS',
-        'awaiting-acceptance' => 'AWAITING ACCEPTANCE',
-        'elevated' => 'ELEVATED',
-        'closed' => 'RESOLVED',
-    ];
+
+    $statusLabels = config('enums.ticket_status');
 
     $statusStyle = $statusStyles[$status] ?? $statusStyles['open'];
     $statusIcon = $statusIcons[$status] ?? $statusIcons['open'];

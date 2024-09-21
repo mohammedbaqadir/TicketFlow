@@ -1,110 +1,82 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Http\Controllers;
 
     use App\Helpers\AuthHelper;
-    use App\Models\Solution;
+    use App\Http\Requests\SearchRequest;
     use App\Models\Ticket;
     use App\Models\User;
+    use Illuminate\Http\JsonResponse;
     use Illuminate\Http\Request;
-    use Illuminate\Support\Facades\Auth;
-    use Illuminate\Support\Facades\Log;
+    use Illuminate\Validation\ValidationException;
 
     class SearchController extends Controller
     {
-        public function search( Request $request )
+        /**
+         * Search for tickets based on the provided query.
+         *
+         * @param  SearchRequest  $request
+         * @return JsonResponse
+         */
+        public function search( SearchRequest $request ) : JsonResponse
         {
-            $query = $request->input( 'query' );
+            $validatedData = $request->validated();
 
-            if ( empty( $query ) ) {
-                return response()->json( [] );
-            }
+            $query = $validatedData['query'];
+            $page = (int) ( $validatedData['page'] ?? 1 );
+            $perPage = (int) ( $validatedData['per_page'] ?? 5 );
 
-            $user = Auth::user();
-            $results = $this->searchContent( $query, $user );
+            $user = $request->user();
+            $results = $this->searchContent( $query, $user, $page, $perPage );
 
             return response()->json( $results );
         }
 
-        private function searchContent( $query, $user )
+
+        /**
+         * Perform the actual search based on user role and query.
+         *
+         * @param  string  $query  The search query
+         * @param  User  $user  The authenticated user
+         * @param  int  $page  The current page number
+         * @param  int  $perPage  The number of results per page
+         * @return array
+         */
+        private function searchContent( string $query, User $user, int $page, int $perPage ) : array
         {
-            $result = collect();
-            $userRole = $this->getUserRole();
-
-            if ( $userRole === 'employee' ) {
-                $result = $this->searchTickets( $query, $user->id, [ 'created_by', 'assignee_id' ] );
-            } elseif ( $userRole === 'agent' ) {
-                $result = $this->searchTickets( $query, $user->id, [ 'assignee_id', null ] );
-            }
-
-            return $result;
-        }
-
-        private function getUserRole()
-        {
-            $role = 'other';
+            $searchQuery = Ticket::search( $query );
 
             if ( AuthHelper::userHasRole( 'employee' ) ) {
-                $role = 'employee';
-            } elseif ( AuthHelper::userHasRole( 'agent' ) ) {
-                $role = 'agent';
+                $searchQuery->where( 'requestor_id', $user->id );
             }
 
-            return $role;
-        }
+            // Paginate search results
+            $paginatedResults = $searchQuery->paginate( $perPage, 'page', $page );
 
-        private function searchTickets( $query, $userId, $userColumns )
-        {
-            return Ticket::where( function ( $q ) use ( $userId, $userColumns ) {
-                foreach ( $userColumns as $column ) {
-                    if ( $column ) {
-                        $q->orWhere( $column, $userId );
-                    } else {
-                        $q->orWhereNull( $column );
-                    }
-                }
-            } )
-                ->where( function ( $q ) use ( $query ) {
-                    $q->where( 'title', 'like', "%{$query}%" )
-                        ->orWhere( 'description', 'like', "%{$query}%" );
-                } )
-                ->with( 'requestor' )
-                ->get()
-                ->map( function ( $ticket ) use ( $query ) {
-                    $inTitle = stripos( $ticket->title, $query ) !== false;
-                    $excerpt = $inTitle
-                        ? $this->generateExcerpt( $ticket->title, $query )
-                        : $this->generateExcerpt( $ticket->description, $query );
+            // Load relationships directly on the paginated result set
+            $tickets = Ticket::whereIn( 'id', $paginatedResults->pluck( 'id' ) )
+                ->withRelations()
+                ->get();
 
-                    return [
-                        'id' => $ticket->id,
-                        'type' => 'ticket',
-                        'title' => $ticket->title,
-                        'excerpt' => $excerpt,
-                        'created_at' => $ticket->created_at,
-                        'created_by' => $ticket->requestor->name,
-                        'assignee_id' => $ticket->assignee_id ? User::find( $ticket->assignee_id )->name : 'Unassigned',
-                    ];
-                } );
-        }
+            $formattedResults = $tickets->map( function ( $ticket ) use ( $query ) {
+                return [
+                    'id' => $ticket->id,
+                    'type' => 'ticket',
+                    'title' => $ticket->title,
+                    'excerpt' => $ticket->generateExcerpt( $query ),
+                    'created_at' => $ticket->created_at,
+                    'created_by' => $ticket->requestor->name,
+                    'assignee' => $ticket->assignee ? $ticket->assignee->name : 'Unassigned',
+                ];
+            } );
 
-        private function generateExcerpt( $content, $query )
-        {
-            $position = stripos( $content, $query );
-            if ( $position === false ) {
-                return substr( $content, 0, 100 );
-            }
-
-            $start = max( 0, $position - 50 );
-            $excerpt = substr( $content, $start, 100 );
-
-            if ( $start > 0 ) {
-                $excerpt = '...' . $excerpt;
-            }
-            if ( \strlen( $content ) > $start + 100 ) {
-                $excerpt .= '...';
-            }
-
-            return $excerpt;
+            return [
+                'data' => $formattedResults,
+                'current_page' => $paginatedResults->currentPage(),
+                'last_page' => $paginatedResults->lastPage(),
+                'per_page' => $paginatedResults->perPage(),
+                'total' => $paginatedResults->total(),
+            ];
         }
     }

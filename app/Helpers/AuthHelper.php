@@ -4,7 +4,6 @@
     namespace App\Helpers;
 
     use App\Models\Answer;
-    use App\Models\Comment;
     use App\Models\Ticket;
 
     class AuthHelper
@@ -39,12 +38,5 @@
             $user = auth()->user();
             return $user !== null && $answer->submitter_id === $user->id;
         }
-
-        public static function userIsCommenter( Comment $comment ) : bool
-        {
-            $user = auth()->user();
-            return $user !== null && $comment->commenter_id === $user->id;
-        }
-
 
     }

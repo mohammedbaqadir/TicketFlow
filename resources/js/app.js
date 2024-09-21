@@ -1,52 +1,78 @@
-import './bootstrap';
-import 'flowbite';
-import Alpine from 'alpinejs';
-import focus from '@alpinejs/focus';
-import Editor from '@toast-ui/editor';
+import "./bootstrap";
+import "flowbite";
+import Alpine from "alpinejs";
+import focus from "@alpinejs/focus";
+import DOMPurify from 'dompurify';
+import Pace from 'pace-js';
 
-window.Alpine = Alpine;
-window.Editor = Editor;
+Pace.start();
+
+// Configure Alpine
 Alpine.plugin(focus);
 
-// Initialize Alpine.js
-document.addEventListener('alpine:init', () => {
-  console.log('Alpine.js initialized');
+// Make Alpine and Editor globally accessible
+window.Alpine = Alpine;
+window.DOMPurify = DOMPurify;
 
-  // Define the darkMode store
-  Alpine.store('darkMode', {
-    on: localStorage.getItem('color-theme') === 'dark'
-      || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches),
+const themeManager = {
+  init () {
+    this.theme = document.body.dataset.theme;
+    this.setupEventListeners();
+  },
+  setupEventListeners () {
+    // Listen for theme toggle events
+    document.addEventListener('theme-toggle', () => this.toggleTheme());
 
-    toggle () {
-      this.on = !this.on;
-      localStorage.setItem('color-theme', this.on ? 'dark' : 'light');
-      this.updateClasses();
-      console.log('Dark mode toggled:', this.on);
-    },
+    // Listen for theme select changes
+    const themeSelect = document.getElementById('theme-select');
+    if (themeSelect) {
+      themeSelect.addEventListener('change', (e) => this.setTheme(e.target.value));
+    }
+  },
+  toggleTheme () {
+    this.setTheme(this.theme === 'light' ? 'dark' : 'light');
+  },
+  setTheme (newTheme) {
+    this.theme = newTheme;
+    document.documentElement.classList.toggle('dark', this.theme === 'dark');
+    document.body.dataset.theme = this.theme;
+    this.saveTheme();
+    document.dispatchEvent(new CustomEvent('theme-changed', {detail: {theme: this.theme}}));
+  },
+  saveTheme () {
+    fetch('/preferences/theme', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({theme: this.theme})
+    }).then(response => response.json())
+      .then(data => console.log('Theme saved:', data))
+      .catch(error => console.error('Error saving theme:', error));
+  }
+};
 
-    updateClasses () {
-      if (this.on) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      console.log('Classes updated for dark mode:', this.on);
+// Toast function
+
+window.toast = function (message, options = {}) {
+  const {description = '', type = 'default', position = 'top-right', html = ''} = options;
+  console.log('Toast triggered:', message, description);
+  window.dispatchEvent(new CustomEvent('toast-show', {
+    detail: {message, description, type, position, html}
+  }));
+};
+
+// Initialize Alpine.js and other functionalities
+document.addEventListener('DOMContentLoaded', () => {
+  themeManager.init();
+  Alpine.start();
+  console.log("Alpine.js started");
+  document.addEventListener('theme-changed', (e) => {
+    const themeSelect = document.getElementById('theme-select');
+    if (themeSelect) {
+      themeSelect.value = e.detail.theme;
     }
   });
 
-  // Update classes based on initial state
-  Alpine.store('darkMode').updateClasses();
-});
-
-Alpine.start();
-
-console.log('Alpine.js started');
-
-// Watch for OS theme changes
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-  if (!('color-theme' in localStorage)) {
-    Alpine.store('darkMode').on = e.matches;
-    Alpine.store('darkMode').updateClasses();
-    console.log('OS theme change detected:', e.matches);
-  }
 });
