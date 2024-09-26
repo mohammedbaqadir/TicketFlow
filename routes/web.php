@@ -10,17 +10,31 @@
     use App\Http\Controllers\UserPreferenceController;
     use Illuminate\Support\Facades\Route;
 
-    Route::middleware( [ 'auth' ] )->group( function () {
-        // Home redirect
-        Route::get( '/', [ RedirectController::class, 'redirect' ] )->name( 'home' );
+// Public routes
+    Route::get( '/error', static function () {
+        return view( 'error' );
+    } )->name( 'error' );
 
+    Route::get( '/faq', function () {
+        return view( 'faq' );
+    } )->name( 'faq' );
+
+    Route::get( '/privacy-policy', function () {
+        return view( 'privacy-policy' );
+    } )->name( 'privacy-policy' );
+
+// Authentication routes (already defined in auth.php)
+    require __DIR__ . '/auth.php';
+
+// Authenticated routes with global rate limiting
+    Route::middleware( [ 'auth', 'throttle:global' ] )->group( function () {
+        Route::get( '/', [ RedirectController::class, 'redirect' ] )->name( 'home' );
         Route::get( '/profile', [ ProfileController::class, 'index' ] )->name( 'profile.index' );
 
         Route::get( '/preferences', [ UserPreferenceController::class, 'index' ] )->name( 'preferences.index' );
         Route::post( '/preferences/theme',
             [ UserPreferenceController::class, 'updateTheme' ] )->name( 'preferences.updateTheme' );
 
-        // Search functionality
         Route::get( '/search', [ SearchController::class, 'search' ] )->name( 'search' );
 
         // Ticket-related routes
@@ -31,33 +45,17 @@
         Route::post( '/tickets/{ticket}/meeting', [ TicketController::class, 'meeting' ] )->name( 'tickets.meeting' );
         Route::post( '/meeting/joined', [ TicketController::class, 'meetingJoined' ] )->name( 'meeting.joined' );
 
-
         // Answer-related routes
         Route::resource( 'tickets.answers', AnswerController::class )
             ->except( [ 'index', 'show' ] )
             ->shallow();
-
-        // Accept answer route
         Route::post( 'answers/{answer}/accept', [ AnswerController::class, 'accept' ] )->name( 'answers.accept' );
     } );
 
+// Routes with specific rate limiting
+    Route::middleware( [ 'auth', 'throttle:auth' ] )->group( function () {
+        // Add any routes that need more stringent rate limiting here
+    } );
 
-// Error route
-    Route::get( '/error', static function () {
-        return view( 'error' );
-    } )->name( 'error' );
-
+// Toast route (consider if this needs authentication)
     Route::post( '/trigger-toast', [ ToastController::class, 'triggerToast' ] )->name( 'trigger-toast' );
-
-    // FAQ Route
-    Route::get( '/faq', function () {
-        return view( 'faq' );
-    } )->name( 'faq' );
-
-// Privacy Policy Route
-    Route::get( '/privacy-policy', function () {
-        return view( 'privacy-policy' );
-    } )->name( 'privacy-policy' );
-
-
-    require __DIR__ . '/auth.php';

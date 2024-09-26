@@ -3,6 +3,7 @@
 
     namespace App\Models;
 
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
     use Illuminate\Database\Eloquent\Relations\HasMany;
     use Illuminate\Database\Eloquent\SoftDeletes;
     use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -13,13 +14,19 @@
     {
         use InteractsWithMedia;
         use SoftDeletes;
+        use HasFactory;
 
-        protected $fillable = [ 'name', 'email', 'password', 'role', 'preferences' ];
+
+        protected $fillable = [
+            'name', 'email', 'password', 'role', 'preferences', 'is_locked', 'lockout_time', 'lockout_count'
+        ];
 
         protected $hidden = [ 'password', 'remember_token' ];
 
         protected $casts = [
             'preferences' => 'array',
+            'is_locked' => 'boolean',
+            'lockout_time' => 'datetime',
         ];
 
         public function tickets() : HasMany

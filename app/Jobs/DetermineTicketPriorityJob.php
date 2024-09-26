@@ -14,7 +14,6 @@
     use Illuminate\Support\Facades\DB;
     use Illuminate\Support\Facades\Log;
     use RuntimeException;
-    use Throwable;
 
     class DetermineTicketPriorityJob implements ShouldQueue
     {

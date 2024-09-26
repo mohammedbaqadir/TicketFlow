@@ -3,15 +3,18 @@
 
     namespace App\Http\Requests\Auth;
 
-    use Illuminate\Auth\Events\Lockout;
+    use App\Actions\Auth\AccountLockoutAction;
+    use App\Actions\Auth\AuthenticateUserAction;
+    use App\Actions\Auth\LoginAttemptAction;
+    use App\Models\User;
     use Illuminate\Foundation\Http\FormRequest;
-    use Illuminate\Support\Facades\Auth;
     use Illuminate\Support\Facades\RateLimiter;
     use Illuminate\Support\Str;
     use Illuminate\Validation\ValidationException;
 
     class LoginRequest extends FormRequest
     {
+
         /**
          * Determine if the user is authorized to make this request.
          */
@@ -40,40 +43,30 @@
          */
         public function authenticate() : void
         {
-            $this->ensureIsNotRateLimited();
+            $user = User::where( 'email', $this->input( 'email' ) )->first();
 
-            if ( !Auth::attempt( $this->only( 'email', 'password' ), $this->boolean( 'remember' ) ) ) {
-                RateLimiter::hit( $this->throttleKey() );
+            if ( $user ) {
+                // Check if the user account is locked
+                app( AccountLockoutAction::class )->checkLockout( $user );
+            }
+
+            // Record the login attempt and apply rate limiting
+            app( LoginAttemptAction::class )->execute( $this->input( 'email' ), $this->ip() );
+
+            // Attempt authentication
+            if ( !app( AuthenticateUserAction::class )->execute( $this->only( 'email', 'password' ),
+                $this->boolean( 'remember' ) ) ) {
+                if ( $user ) {
+                    app( AccountLockoutAction::class )->execute( $user );
+                }
 
                 throw ValidationException::withMessages( [
-                    'email' => trans( 'auth.failed' ),
+                    'email' => 'authentication failed'
                 ] );
             }
 
+            // Clear rate limiting for successful login
             RateLimiter::clear( $this->throttleKey() );
-        }
-
-        /**
-         * Ensure the login request is not rate limited.
-         *
-         * @throws \Illuminate\Validation\ValidationException
-         */
-        public function ensureIsNotRateLimited() : void
-        {
-            if ( !RateLimiter::tooManyAttempts( $this->throttleKey(), 5 ) ) {
-                return;
-            }
-
-            event( new Lockout( $this ) );
-
-            $seconds = RateLimiter::availableIn( $this->throttleKey() );
-
-            throw ValidationException::withMessages( [
-                'email' => trans( 'auth.throttle', [
-                    'seconds' => $seconds,
-                    'minutes' => ceil( $seconds / 60 ),
-                ] ),
-            ] );
         }
 
         /**
@@ -81,6 +74,6 @@
          */
         public function throttleKey() : string
         {
-            return Str::transliterate( Str::lower( $this->string( 'email' ) ) . '|' . $this->ip() );
+            return Str::transliterate( Str::lower( $this->input( 'email' ) ) . '|' . $this->ip() );
         }
     }
