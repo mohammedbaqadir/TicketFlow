@@ -1,6 +1,7 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
+import flowbite from 'flowbite/plugin';
 import preset from './vendor/filament/support/tailwind.config.preset';
 
 /** @type {import('tailwindcss').Config} */
@@ -11,11 +12,8 @@ export default {
     './storage/framework/views/*.php',
     './resources/**/*.js',
     './resources/views/**/*.blade.php',
-    './app/Filament/**/*.php',
-    './resources/views/filament/**/*.blade.php',
-    './vendor/filament/**/*.blade.php',
     "./node_modules/flowbite/**/*.js",
-    './public/js/pace.min.js',
+    './resources/js/vendor/pace.min.js',
   ],
   darkMode: 'class',
   theme: {
@@ -43,10 +41,9 @@ export default {
         'glow-green-400': '0 0 15px rgba(74, 222, 128, 0.5)',
         'glow-green-600': '0 0 15px rgba(22, 163, 74, 0.5)',
       },
-
     },
   },
-  plugins: [forms, typography, require('flowbite/plugin'), function ({addUtilities}) {
+  plugins: [forms, typography, flowbite, function ({addUtilities}) {
     const newUtilities = {
       '.glow-green-400': {
         boxShadow: '0 0 15px rgba(74, 222, 128, 0.5)',

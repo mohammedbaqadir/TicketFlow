@@ -3,10 +3,8 @@
 
     namespace App\Actions\Ticket;
 
-    use App\API\GenerateGeminiTextAction;
+    use App\Actions\API\GenerateGeminiTextAction;
     use App\Models\Ticket;
-    use GeminiAPI\Laravel\Facades\Gemini;
-    use Illuminate\Http\Exceptions\ThrottleRequestsException;
     use Illuminate\Support\Facades\Log;
     use Illuminate\Validation\ValidationException;
 
@@ -76,25 +74,23 @@ This prompt simulates an **IT ticketing system** where an employee has submitted
 **Output:**
 
 **As the IT ticketing system,** assign a one-word priority label (High, Medium, or Low) based on the analyzed impact on the employee's ability to work.";
+            $priority = 'low';
+
             try {
                 $response = $this->generateGeminiTextAction->execute( $prompt );
-                return strtolower( preg_replace( '/[^a-zA-Z]/', '', $response ) );
+                $priority = strtolower( preg_replace( '/[^a-zA-Z]/', '', $response ) );
             } catch (ValidationException $e) {
                 Log::warning( 'Rate limit exceeded for Gemini API: ' . $e->getMessage() );
-                return 'low';
             } catch (\Exception $e) {
                 Log::error( 'API error while determining priority: ' . $e->getMessage() );
-                return 'low';
             }
+
+            return $priority;
         }
 
         private function determineTimeout( string $priority ) : int
         {
-            return match ( $priority ) {
-                'high' => 2,
-                'medium' => 4,
-                default => 8,
-            };
+            return config( "ticket.priority_timeout.{$priority}", 8 );
         }
 
     }

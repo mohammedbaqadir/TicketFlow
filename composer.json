@@ -9,12 +9,13 @@
   "license": "MIT",
   "require": {
     "php": "^8.2",
+    "ext-pdo": "*",
     "filament/filament": "^3.2",
     "filament/notifications": "^3.2",
     "filament/spatie-laravel-media-library-plugin": "^3.2",
     "filament/widgets": "^3.2",
     "filipfonal/filament-log-manager": "^2.0",
-    "gemini-api-php/laravel": "*",
+    "gemini-api-php/laravel": "^0.3.0",
     "http-interop/http-factory-guzzle": "^1.2",
     "laravel/framework": "^11.9",
     "laravel/scout": "^10.10",
@@ -23,11 +24,11 @@
     "meilisearch/meilisearch-php": "^1.9",
     "njxqlus/filament-lightbox": "^3.2",
     "spatie/laravel-activitylog": "^4.8",
+    "spatie/laravel-failed-job-monitor": "^4.3",
     "spatie/laravel-medialibrary": "^11.7",
-    "ext-pdo": "*"
+    "spatie/laravel-schedule-monitor": "^3.8"
   },
   "require-dev": {
-    "barryvdh/laravel-ide-helper": "^3.1",
     "fakerphp/faker": "^1.23",
     "laravel/breeze": "^2.1",
     "laravel/pint": "^1.13",
@@ -58,7 +59,9 @@
       "@php artisan filament:upgrade"
     ],
     "post-update-cmd": [
-      "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+      "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+      "@php artisan config:cache",
+      "@php artisan route:cache"
     ],
     "post-root-package-install": [
       "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
@@ -84,5 +87,6 @@
     }
   },
   "minimum-stability": "stable",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "classmap-authoritative": true
 }

@@ -3,6 +3,8 @@
 
     namespace App\Filament\Resources;
 
+    use App\Actions\Ticket\AssignTicketAction;
+    use App\Actions\Ticket\UnassignTicketAction;
     use App\Filament\Resources\TicketResource\Pages\CreateTicket;
     use App\Filament\Resources\TicketResource\Pages\EditTicket;
     use App\Filament\Resources\TicketResource\Pages\ListTickets;
@@ -71,7 +73,7 @@
                         ->maxLength( 255 ),
                     MarkdownEditor::make( 'description' )
                         ->required()
-                        ->disableToolbarButtons(['attachFiles']),
+                        ->disableToolbarButtons( [ 'attachFiles' ] ),
                 ] );
         }
 
@@ -87,17 +89,18 @@
             return $table
                 ->columns( [
                     TextColumn::make( 'id' )->sortable(),
-                    TextColumn::make( 'title' )->label( 'Title')->sortable()->searchable(),
+                    TextColumn::make( 'title' )->label( 'Title' )->sortable()->searchable(),
                     TextColumn::make( 'requestor.name' )->label( 'Created By' )->sortable()->searchable(),
                     TextColumn::make( 'formatted_status' )->label( 'Status' )->sortable( [ 'status' ] )->searchable( [ 'status' ] ),
                     TextColumn::make( 'formatted_priority' )->label( 'Priority' )->sortable( [ 'priority' ] )
                         ->searchable( [ 'priority' ] ),
                     TextColumn::make( 'assignee.name' )->label( 'Assigned To' )->sortable()->searchable(),
-                    TextColumn::make( 'timeout_at' )->label( 'Timeout')->sortable()->dateTime(),
+                    TextColumn::make( 'accepted_answer_id' )->label( 'Accepted Answer' ),
+                    TextColumn::make( 'timeout_at' )->label( 'Timeout' )->sortable()->dateTime(),
                 ] )
                 ->filters( [
                     SelectFilter::make( 'status' )
-                        ->options( array_flip( config( 'enums.ticket_status')) ),
+                        ->options( array_flip( config( 'enums.ticket_status' ) ) ),
 
                     SelectFilter::make( 'priority' )
                         ->options( array_flip( config( 'enums.ticket_priority' ) ) ),
@@ -126,12 +129,11 @@
                         } )
                         ->action( function ( array $data, Ticket $record ) {
                             if ( $data['action'] === 'assign_to_self' ) {
-                                ( new TicketService(new TicketRepository( $record)) )->assignTicket( $record, auth()->user() );
+                                ( new AssignTicketAction() )->execute( $record, auth()->user() );
                             } elseif ( $data['action'] === 'assign_to_agent' ) {
                                 $agent = User::findOrFail( $data['agent_id'] );
-                                ( new TicketService(new TicketRepository( $record)) )->assignTicket( $record, $agent );
+                                ( new AssignTicketAction() )->execute( $record, $agent );
                             }
-
                             return redirect()->route( 'filament.app.resources.tickets.view', $record );
                         } )
                         ->modalHeading( 'Assign Ticket' )
@@ -142,7 +144,7 @@
                         ->visible( fn( Ticket $record ) => $record->assignee_id !== null )
                         ->requiresConfirmation()
                         ->action( function ( array $data, Ticket $record ) {
-                            ( new TicketService(new TicketRepository( $record)) )->unassignTicket( $record );
+                            ( new UnassignTicketAction() )->execute( $record );
                             return redirect()->route( 'filament.app.resources.tickets.index' );
                         } )
                         ->modalHeading( 'Un-Assign Ticket' )
@@ -178,8 +180,8 @@
         private static function getTicketsNavigationItems() : array
         {
             $nav_items = [];
-            $mappings = config( 'enums.ticket_status');
-            foreach ( $mappings as  $status => $label ) {
+            $mappings = config( 'enums.ticket_status' );
+            foreach ( $mappings as $status => $label ) {
                 $nav_items[] = self::createNavigationItem( $label, $status );
             }
             return $nav_items;

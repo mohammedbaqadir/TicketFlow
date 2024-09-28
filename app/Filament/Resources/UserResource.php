@@ -8,7 +8,7 @@
     use App\Filament\Resources\UserResource\Pages\ListUsers;
     use App\Filament\Resources\UserResource\Pages\ViewUser;
     use App\Models\User;
-    use Filament\Forms\Components\FileUpload;
+    use Filament\Forms\Components\Checkbox;
     use Filament\Forms\Components\Select;
     use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
     use Filament\Forms\Components\TextInput;
@@ -17,10 +17,10 @@
     use Filament\Tables\Actions\DeleteAction;
     use Filament\Tables\Actions\DeleteBulkAction;
     use Filament\Tables\Actions\EditAction;
+    use Filament\Tables\Columns\CheckboxColumn;
     use Filament\Tables\Columns\ImageColumn;
     use Filament\Tables\Columns\TextColumn;
     use Filament\Tables\Table;
-    use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
     class UserResource extends Resource
     {
@@ -58,6 +58,7 @@
                             'admin' => 'Admin',
                         ] )
                         ->required(),
+                    Checkbox::make( 'is_locked' )->label( 'Locked?' )->inline(),
                     SpatieMediaLibraryFileUpload::make( 'avatar' )
                         ->collection( 'avatar' )
                         ->label( 'Avatar' )
@@ -73,10 +74,11 @@
                         ->getStateUsing( fn( User $record ) => $record->getFirstMediaUrl( 'avatar' ) )
                         ->size( 50 ),
                     TextColumn::make( 'id' )->sortable(),
-                    TextColumn::make( 'name' )->label( 'Name')->sortable()->searchable(),
-                    TextColumn::make( 'email' )->label('Email')->sortable()->searchable(),
-                    TextColumn::make( 'role' )->label('Role')->sortable(),
-                    TextColumn::make( 'created_at' )->label( 'Created At')->sortable()->dateTime(),
+                    TextColumn::make( 'name' )->label( 'Name' )->sortable()->searchable(),
+                    TextColumn::make( 'email' )->label( 'Email' )->sortable()->searchable(),
+                    TextColumn::make( 'role' )->label( 'Role' )->sortable(),
+                    CheckboxColumn::make( 'is_locked' )->label( 'Locked?' )->inline(),
+                    TextColumn::make( 'created_at' )->label( 'Created At' )->sortable()->dateTime(),
                 ] )
                 ->actions( [
                     EditAction::make(),

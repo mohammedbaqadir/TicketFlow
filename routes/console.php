@@ -5,9 +5,9 @@
     use Illuminate\Support\Facades\Artisan;
     use Illuminate\Support\Facades\Schedule;
     use App\Jobs\UnlockAccountsJob;
+    use Spatie\ScheduleMonitor\Models\MonitoredScheduledTaskLogItem;
 
 
-    Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote')->hourly();
     Schedule::job( new UnlockAccountsJob() )->everyFiveMinutes();
+    Schedule::command( 'tickets:escalate-timed-out' )->everyMinute()->monitorName( 'Escalate Timed-Out Tickets' );
+    Schedule::command( 'model:prune', [ '--model' => MonitoredScheduledTaskLogItem::class ] )->daily();

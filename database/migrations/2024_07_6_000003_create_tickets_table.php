@@ -17,7 +17,7 @@
                 $table->longText( 'description' );
                 $table->enum( 'status', [ 'open', 'in-progress', 'awaiting-acceptance', 'escalated', 'resolved' ] );
                 $table->enum( 'priority', [ 'low', 'medium', 'high' ] )->nullable();
-                $table->dateTime( 'timeout_at' )->nullable()->after( 'priority' );
+                $table->dateTime( 'timeout_at' )->nullable();
                 $table->foreignId( 'requestor_id' )->constrained( 'users' )->onDelete( 'cascade' );
                 $table->foreignId( 'assignee_id' )->nullable()->constrained( 'users' )->onDelete( 'set null' );
                 $table->string( 'meeting_room' )->nullable();

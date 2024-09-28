@@ -11,8 +11,6 @@
           }
         </script>
 
-        <link rel="stylesheet" href="{{ asset('css/flash.css') }}">
-
         <title>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Preload the Exo 2 font stylesheet -->
@@ -32,7 +30,12 @@
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
 
         <!-- Styles and Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite([
+            'resources/css/app.css',
+            'resources/css/vendor/flash.css',
+            'resources/js/app.js',
+            'resources/js/vendor/pace.min.js'
+])
         @stack('styles')
     </head>
     <body data-theme="{{ Auth::check() ? Auth::user()->preferred_theme : 'light' }}" class="font-sans antialiased bg-gray-50

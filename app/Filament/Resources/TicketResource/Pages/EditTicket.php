@@ -4,6 +4,7 @@
     namespace App\Filament\Resources\TicketResource\Pages;
 
     use App\Filament\Resources\TicketResource;
+    use App\Jobs\DetermineTicketPriorityJob;
     use App\Models\Ticket;
     use App\Repositories\TicketRepository;
     use App\Services\TicketService;
@@ -42,20 +43,13 @@
             ] );
         }
 
-        /**
-         * Mutate form data before saving a ticket.
-         *
-         * @param  array  $data
-         * @return array
-         */
-        protected function mutateFormDataBeforeSave( array $data ) : array
+        protected function afterSave() : void
         {
-            $ticketService = new TicketService( new TicketRepository( new Ticket() ) );
+            $ticket = $this->record;
 
-            $data['priority'] = $ticketService->determinePriority( $data['title'], $data['description'] );
-            $data['timeout_at'] = now()->addHours( $ticketService->determineTimeout( $data['priority'] ) );
-            return $data;
+            DetermineTicketPriorityJob::dispatch( $ticket );
         }
+
 
         /**
          * Get the header actions for the edit page.

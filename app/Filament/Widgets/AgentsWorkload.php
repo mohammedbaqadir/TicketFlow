@@ -1,4 +1,5 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Filament\Widgets;
 
@@ -30,7 +31,7 @@
             ];
         }
 
-        protected function getType(): string
+        protected function getType() : string
         {
             return 'bar';
         }

@@ -3,6 +3,9 @@
 
     namespace App\Filament\Resources\TicketResource\Pages;
 
+    use App\Actions\Answer\CreateAnswerAction;
+    use App\Actions\Ticket\DeleteTicketAction;
+    use App\Actions\Ticket\UnassignTicketAction;
     use App\Helpers\AuthHelper;
     use App\Livewire\SolutionEntry;
     use App\Models\User;
@@ -12,6 +15,7 @@
     use App\Services\SolutionService;
     use Filament\Actions\Action;
     use Filament\Actions\EditAction;
+    use Filament\Forms\Components\Hidden;
     use Filament\Forms\Components\MarkdownEditor;
     use Filament\Forms\Components\Select;
     use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -81,13 +85,16 @@
                                     ->badge( $this->record->answers()->count() )
                                     ->schema( function () {
                                         return
-                                        RepeatableEntry::make('answers')
-                                            ->schema( [
-                                            TextEntry::make( 'author.name' ),
-                                            TextEntry::make( 'title' ),
-                                            TextEntry::make( 'content' )->columnSpanFull()
-                                        ]);})
-                                    ->grow( true ),])]),
+                                            RepeatableEntry::make( 'answers' )
+                                                ->schema( [
+                                                    TextEntry::make( 'submitter.name' ),
+                                                    TextEntry::make( 'title' ),
+                                                    TextEntry::make( 'content' )->markdown()->columnSpanFull()
+                                                ] );
+                                    } )
+                                    ->grow( true ),
+                            ] )
+                    ] ),
                     Section::make( [
                         TextEntry::make( 'id' )->label( 'Ticket ID' ),
                         TextEntry::make( 'created_at' )->label( 'Created At' )->dateTime(),
@@ -105,13 +112,13 @@
          */
         protected function getHeaderActions() : array
         {
-            $actions = [
+            return [
                 Action::make( 'unassignTicket' )
                     ->label( 'Un-Assign Ticket' )
                     ->visible( fn( Ticket $record ) => $record->assignee_id !== null )
                     ->requiresConfirmation()
                     ->action( function ( array $data, Ticket $record ) {
-                        ( new TicketService( new TicketRepository( $record ) ) )->unassignTicket( $record );
+                        ( new UnassignTicketAction() )->execute( $record );
                         return redirect()->route( 'filament.app.resources.tickets.view', $record );
                     } )
                     ->modalHeading( 'Un-Assign Ticket' )
@@ -120,14 +127,14 @@
                 Action::make( 'delete' )
                     ->label( 'Delete' )
                     ->action( function () {
-                        (new TicketService( new TicketRepository( $this->record )))->delete( $this->record->getKey());
-                                Notification::make()
-                                    ->title( 'Deleted' )
-                                    ->body( 'The Ticket Has Been Deleted' )
-                                    ->success()
-                                    ->send();
-                                return redirect()->route( 'filament.app.resources.tickets.index' );
-                        } )
+                        ( new DeleteTicketAction() )->execute( $this->record );
+                        Notification::make()
+                            ->title( 'Deleted' )
+                            ->body( 'The Ticket Has Been Deleted' )
+                            ->success()
+                            ->send();
+                        return redirect()->route( 'filament.app.resources.tickets.index' );
+                    } )
                     ->requiresConfirmation(),
                 Action::make( 'submitSolution' )
                     ->label( 'Submit a Solution' )
@@ -139,11 +146,10 @@
                             ->label( 'Answer' )
                             ->required()
                             ->disableToolbarButtons( [ 'attachFiles' ] ),
+                        Hidden::make( 'ticket_id' )->default( $this->record->getKey() )
                     ] )
                     ->action( function ( array $data ) {
-                        ( new AnswerService( new AnswerRepository( $this->record)) )->create( [
-                            'content' => $data['content'],
-                            'ticket_id' => $this->record->getKey() ] );
+                        ( new CreateAnswerAction() )->execute( $data );
                         Notification::make()
                             ->title( 'Success' )
                             ->body( 'Answer submitted successfully.' )
@@ -155,9 +161,6 @@
                     ->modalWidth( 'lg' ),
                 EditAction::make( 'Edit' ),
             ];
-
-
-            return $actions;
         }
 
     }

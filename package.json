@@ -25,7 +25,7 @@
         "@toast-ui/editor-plugin-color-syntax": "^3.1.0",
         "dompurify": "^3.1.6",
         "flowbite": "^2.4.1",
-        "highlight.js": "^11.10.0",
-        "pace-js": "^1.2.4"
+        "pace-js": "^1.2.4",
+        "rollup": "^4.22.4"
     }
 }

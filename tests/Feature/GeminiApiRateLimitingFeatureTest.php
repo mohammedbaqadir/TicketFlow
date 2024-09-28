@@ -24,7 +24,7 @@
 
 
     test( 'it applies rate limit on Gemini API requests', function () {
-        $action = new \App\API\GenerateGeminiTextAction();
+        $action = new \App\Actions\API\GenerateGeminiTextAction();
 
         // Simulate reaching the rate limit
         for ( $i = 0; $i < 10; $i++ ) {

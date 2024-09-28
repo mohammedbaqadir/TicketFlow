@@ -25,9 +25,9 @@
             if ( AuthHelper::userHasRole( 'admin' ) ) {
                 $can_view = true;
             } elseif ( AuthHelper::userHasRole( 'agent' ) ) {
-                $can_view = AuthHelper::userIsAssignee( $ticket);
+                $can_view = AuthHelper::userIsAssignee( $ticket );
             } elseif ( AuthHelper::userHasRole( 'employee' ) ) {
-                $can_view = AuthHelper::userIsRequestor( $ticket);
+                $can_view = AuthHelper::userIsRequestor( $ticket );
             }
 
             return $can_view;
@@ -74,7 +74,7 @@
 
         public function answer( User $user, Ticket $ticket ) : bool
         {
-            return AuthHelper::userIsAssignee( $ticket);
+            return AuthHelper::userIsAssignee( $ticket );
         }
 
 

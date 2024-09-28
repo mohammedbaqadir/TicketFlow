@@ -11,8 +11,9 @@
          */
         public function up() : void
         {
-            Schema::table( 'users', function ( Blueprint $table ) {
-                $table->json( 'preferences' )->nullable()->after( 'role' );
+            Schema::table( 'tickets', function ( Blueprint $table ) {
+                $table->index( 'timeout_at' );
+                $table->index( 'status' );
             } );
         }
 
@@ -21,8 +22,9 @@
          */
         public function down() : void
         {
-            Schema::table( 'users', function ( Blueprint $table ) {
-                $table->dropColumn( 'preferences' );
+            Schema::table( 'tickets', function ( Blueprint $table ) {
+                $table->dropIndex( [ 'timeout_at' ] );
+                $table->dropIndex( [ 'status' ] );
             } );
         }
     };

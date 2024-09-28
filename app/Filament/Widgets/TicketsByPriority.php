@@ -1,4 +1,5 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Filament\Widgets;
 
@@ -11,7 +12,7 @@
         protected static ?string $description = 'Overview of all tickets in the system by their priority, filterable by period of time.';
         public ?string $filter = 'year';
 
-        protected function getData(): array
+        protected function getData() : array
         {
             $priorities = Ticket::select( 'priority' )
                 ->groupBy( 'priority' )
@@ -43,7 +44,7 @@
             ];
         }
 
-        protected function getType(): string
+        protected function getType() : string
         {
             return 'bar';
         }

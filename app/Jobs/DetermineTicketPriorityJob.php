@@ -22,11 +22,15 @@
         use SerializesModels;
 
         protected Ticket $ticket;
-        protected DetermineTicketPriorityAction $determineTicketPriorityAction;
 
         public function __construct( Ticket $ticket )
         {
             $this->ticket = $ticket;
+        }
+
+        public function retryUntil()
+        {
+            return now()->addMinutes( 10 ); // Allow retries for 10 minutes
         }
 
         public function handle( DetermineTicketPriorityAction $determineTicketPriorityAction ) : void
@@ -35,13 +39,22 @@
                 DB::transaction( function () use ( $determineTicketPriorityAction ) {
                     $data = $determineTicketPriorityAction->execute( $this->ticket );
                     $this->ticket->update( $data );
+
+                    DB::afterCommit( function () use ( $data ) {
+                        EscalateTicketJob::dispatch( $this->ticket )
+                            ->delay( $data['timeout_at']->diffInSeconds( now() ) + 5 );
+                    } );
                 } );
             } catch (QueryException $e) {
-                Log::error( 'Database error while updating ticket priority: ' . $e->getMessage() );
-                throw new RuntimeException( 'Database error occurred while updating ticket priority.' );
-            } catch (RuntimeException $e) {
-                Log::error( 'Runtime exception: ' . $e->getMessage() );
-                throw $e;
+                // Check if it's a deadlock or timeout issue
+                if ( str_contains( $e->getMessage(), 'Deadlock' ) || str_contains( $e->getMessage(),
+                        'Lock wait timeout' ) ) {
+                    // Re-throw exception so it triggers a retry
+                    $this->release( 10 ); // Delay 10 seconds before retrying
+                } else {
+                    Log::error( 'Database error while updating ticket priority: ' . $e->getMessage() );
+                    throw new RuntimeException( 'Database error occurred while updating ticket priority.' );
+                }
             } catch (Exception $e) {
                 Log::error( 'Error determining priority: ' . $e->getMessage() );
                 throw new RuntimeException( 'Error occurred while determining priority.' );

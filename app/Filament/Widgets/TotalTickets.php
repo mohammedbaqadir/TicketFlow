@@ -1,4 +1,5 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Filament\Widgets;
 
@@ -8,12 +9,12 @@
 
     class TotalTickets extends BaseWidget
     {
-        protected function getStats(): array
+        protected function getStats() : array
         {
             return [
                 Stat::make( 'Total Tickets', Ticket::count() )
                     ->description( 'Total tickets created in the system' )
-                    ->descriptionColor( 'gray')
+                    ->descriptionColor( 'gray' )
             ];
         }
     }

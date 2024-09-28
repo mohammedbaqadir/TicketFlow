@@ -1,4 +1,5 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace App\Filament\Widgets;
 
@@ -11,7 +12,7 @@
         protected static ?string $description = 'Overview of tickets statuses of all tickets in the system, filterable by period of time.';
         public ?string $filter = 'year';
 
-        protected function getData(): array
+        protected function getData() : array
         {
             $statuses = Ticket::select( 'status' )
                 ->groupBy( 'status' )
@@ -43,7 +44,7 @@
             ];
         }
 
-        protected function getType(): string
+        protected function getType() : string
         {
             return 'pie';
         }

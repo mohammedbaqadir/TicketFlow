@@ -6,6 +6,7 @@
     use App\Observers\TicketObserver;
     use Illuminate\Database\Eloquent\Attributes\ObservedBy;
     use Illuminate\Database\Eloquent\Builder;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
     use Illuminate\Database\Eloquent\Model;
     use Illuminate\Database\Eloquent\Relations\BelongsTo;
     use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,6 +22,7 @@
         use LogsActivity;
         use SoftDeletes;
         use Searchable;
+        use HasFactory;
 
         protected $fillable = [
             'title', 'description', 'status', 'priority', 'requestor_id', 'assignee_id', 'timeout_at',

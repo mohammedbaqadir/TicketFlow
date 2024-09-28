@@ -9,13 +9,19 @@
 
     class CreateTicketAction
     {
-
+        /**
+         * Create a new ticket and queue priority determination.
+         *
+         * @param  array  $data
+         * @return Ticket
+         */
         public function execute( array $data ) : Ticket
         {
             return DB::transaction( function () use ( $data ) {
                 $ticket = Ticket::create( $this->prepareTicketData( $data ) );
 
                 DB::afterCommit( static function () use ( $ticket ) {
+                    // Queue the priority determination job
                     DetermineTicketPriorityJob::dispatch( $ticket );
                 } );
 
@@ -23,6 +29,12 @@
             } );
         }
 
+        /**
+         * Prepare ticket data for creation.
+         *
+         * @param  array  $data
+         * @return array
+         */
         private function prepareTicketData( array $data ) : array
         {
             return array_filter( [
