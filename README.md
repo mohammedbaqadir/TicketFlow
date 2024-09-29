@@ -1,66 +1,175 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ![TicketFlow Logo](\public\images\logo-banner-dark-removebg.png "TicketFlow Logo")
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+<div align="center">
 
-## About Laravel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+[![Laravel](https://img.shields.io/badge/Laravel-FF2D20?style=Plastic&logo=laravel&logoColor=white)](https://laravel.com)
+![Livewire](https://img.shields.io/badge/livewire-%234e56a6.svg?style=Plastic&logo=livewire&logoColor=white)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=Plastic&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
+![Alpine.js](https://img.shields.io/badge/alpinejs-white.svg?style=Plastic&logo=alpinedotjs&logoColor=%238BC0D0)
+![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=Plastic&logo=vite&logoColor=white)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=Plastic)](https://opensource.org/licenses/MIT)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Streamline your IT support with AI-powered ticket management 🚀
 
-## Learning Laravel
+[Live Demo (coming soon)](#) |
+[Documentation (coming soon)]() |
+[Report Bug](https://github.com/mohammedbaqadir/ticketflow/issues) |
+[Request Feature](https://github.com/mohammedbaqadir/ticketflow/issues)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+</div>
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🌟 Key Features
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+[//]: # "Placeholder for demo GIF: A short animation showcasing the ticket creation, AI prioritization, and resolution process"
 
-## Laravel Sponsors
+- 🧠 **AI-Driven Prioritization**: Harness the power of Gemini API for smart ticket sorting
+- 🔍 **Lightning-Fast Search**: Find tickets in milliseconds with Meilisearch
+- ⚡ **Optimized Performance**: Handle heavy loads with ease using caching and job queues
+- 🔐 **Rock-Solid Security**: Multi-level rate limiting and role-based access keep your data safe
+- 🎨 **Sleek UI**: Intuitive interfaces built with TailwindCSS and AlpineJS
+- 🎥 **Live Video Support**: Connect instantly via Jitsi Meet integration
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 🛠️ Tech Stack
 
-### Premium Partners
+<div align="center">
+Laravel 11 - FilamentPHP 3.2 - Livewire 3.5 - AlpineJS 3.4 - TailwindCSS 3.4 - Pest 3.2
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+</div>
 
-## Contributing
+## 🚀 Installation
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Prerequisites
 
-## Code of Conduct
+Before you begin, ensure you have the following installed:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- PHP >= 8.2 🐘
+- Composer 🎼
+- Node.js and npm 📦
+- MySQL 🐬
 
-## Security Vulnerabilities
+### Installation
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+1. Clone the repo and cd into it:
 
-## License
+   ```sh
+   git clone https://github.com/mohammedbaqadir/ticketflow.git
+   cd ticketflow
+   ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+2. Install PHP dependencies:
+
+   ```sh
+   composer install
+   ```
+
+3. Install JavaScript dependencies:
+
+   ```sh
+   npm install
+   ```
+
+4. Set up your environment:
+
+   ```sh
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+5. Configure your database in `.env` and run migrations:
+
+   ```sh
+   php artisan migrate
+   ```
+
+6. Build assets and start the server:
+   ```sh
+   npm run build
+   php artisan serve
+   ```
+
+Voila! 🎉 Visit `http://localhost:8000` to see TicketFlow in action.
+
+## 📚 Configuration Deep Dive
+
+### 🔍 Meilisearch
+
+1. Install Meilisearch
+2. Update `.env`:
+   ```
+   SCOUT_DRIVER=meilisearch
+   MEILISEARCH_HOST=http://localhost:7700
+   MEILISEARCH_KEY=your_master_key
+   ```
+
+### 🧠 Gemini API
+
+1. Get your API key from Google
+2. Add to `.env`:
+   ```
+   GEMINI_API_KEY=your_gemini_api_key
+   ```
+
+### 🎥 Jitsi Meet
+
+1. Set up Jitsi Meet
+2. Add to `.env`:
+   ```
+   JITSI_VPAAS_MAGIC_COOKIE=your_magic_cookie
+   ```
+
+## 🎭 User Roles
+
+👤 **Employee**: Create and track personal tickets
+👨‍💼 **Agent**: Manage all tickets, self-assign
+👑 **Admin**: Full access, including user management
+
+## 🎬 Usage Scenarios
+
+### Creating a Ticket
+
+1. 🔑 Log in as Employee
+2. 📝 Click "Create Ticket"
+3. 🖊️ Fill details and submit
+
+### Managing Tickets
+
+1. 🔑 Log in as Agent/Admin
+2. 📊 View ticket dashboard
+3. ✅ Assign, update, resolve
+
+## 🧪 Testing
+
+Run tests with style:
+
+```sh
+php artisan test
+```
+
+Watch those green checkmarks fly! ✅✅✅
+
+## 🗺️ Roadmap
+
+I'm constantly working to improve TicketFlow and add exciting new features. Here's what's on the horizon:
+
+- 📅 **Ticket Timelines**: Capture and display important events throughout a ticket's lifecycle, providing a clear
+  historical view of each issue's progression.
+
+- 📊 **Kanban Board Integration**: Implement a Kanban-style board for both employees and agents, offering a visual and
+  intuitive way to manage tickets and workflow.
+
+- ✅ **Enhanced Form Validation**: Add robust front-end validation to all forms, improving user experience and reducing
+  errors before data submission.
+
+- 🛡️ **Content Security Policy**: Implement a comprehensive Content Security Policy to further bolster the application's
+  security posture and protect against various types of attacks.
+
+## 📜 License
+
+Distributed under the MIT License. See [LICENSE](LICENSE.md) for more information.
+
+## 💖 Acknowledgments
+
+- 🙌 Laravel community
+- ☕ Caffeine suppliers
