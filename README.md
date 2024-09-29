@@ -1,4 +1,5 @@
-# ![TicketFlow Logo](\public\images\logo-banner-dark-removebg.png "TicketFlow Logo")
+ ![TicketFlow Logo](/public/images/logo-banner-dark-removebg.png "TicketFlow Logo")
+
 
 <div align="center">
 
@@ -14,7 +15,7 @@
 Streamline your IT support with AI-powered ticket management 🚀
 
 [Live Demo (coming soon)](#) |
-[Documentation (coming soon)]() |
+[Documentation (coming soon)](#) |
 [Report Bug](https://github.com/mohammedbaqadir/ticketflow/issues) |
 [Request Feature](https://github.com/mohammedbaqadir/ticketflow/issues)
 
