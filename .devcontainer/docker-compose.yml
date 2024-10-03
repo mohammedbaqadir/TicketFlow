@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   app:
     build:
@@ -7,10 +8,14 @@ services:
     volumes:
       - ..:/workspace:cached
     command: sleep infinity
-    network_mode: service:db
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - JITSI_VPAAS_MAGIC_COOKIE=${JITSI_VPAAS_MAGIC_COOKIE}
+    depends_on:
+      - db
+      - meilisearch
+    networks:
+      - app-network
 
   db:
     image: mysql:8
@@ -22,6 +27,8 @@ services:
       MYSQL_DATABASE: TicketFlow
       MYSQL_USER: user
       MYSQL_PASSWORD: password
+    networks:
+      - app-network
 
   meilisearch:
     image: getmeili/meilisearch:v1.9.0
@@ -29,6 +36,12 @@ services:
       - meilisearch-data:/meili_data
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-dev_key_placeholder}
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   mysql-data:
