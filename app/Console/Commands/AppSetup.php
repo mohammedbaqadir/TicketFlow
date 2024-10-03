@@ -41,23 +41,14 @@
             $this->info( $exitCode === 0 ? 'Application setup complete!' : 'Application setup failed.' );
         }
 
-        /**
-         * Set the Meilisearch key programmatically.
-         * @return bool
-         */
         private function setMeilisearchKey() : bool
         {
-            $meilisearchKey = 'dev_key_' . bin2hex( random_bytes( 16 ) );  // Generate a random key for Meilisearch in dev
-            Config::set( 'scout.meilisearch.key', $meilisearchKey );      // Store the key in the config dynamically
-
+            $meilisearchKey = env( 'MEILI_MASTER_KEY', 'dev_key_placeholder' );
+            Config::set( 'scout.meilisearch.key', $meilisearchKey );
             $this->info( 'MEILISEARCH_KEY has been set programmatically.' );
             return true;
         }
 
-        /**
-         * Run the setup tasks.
-         * @return int
-         */
         private function runSetupTasks() : int
         {
             try {

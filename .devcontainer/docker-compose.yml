@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    network_mode: service:db
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - JITSI_VPAAS_MAGIC_COOKIE=${JITSI_VPAAS_MAGIC_COOKIE}
+
+  db:
+    image: mysql:8
+    restart: unless-stopped
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: TicketFlow
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.9.0
+    volumes:
+      - meilisearch-data:/meili_data
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-dev_key_placeholder}
+
+volumes:
+  mysql-data:
+  meilisearch-data:
