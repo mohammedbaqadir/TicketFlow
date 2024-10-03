@@ -1,4 +1,4 @@
- ![TicketFlow Logo](/public/images/logo-banner-dark-removebg.png "TicketFlow Logo")
+![TicketFlow Logo](/public/images/logo-banner-dark-removebg.png "TicketFlow Logo")
 
 
 <div align="center">
@@ -39,9 +39,46 @@ Laravel 11 - FilamentPHP 3.2 - Livewire 3.5 - AlpineJS 3.4 - TailwindCSS 3.4 - P
 
 </div>
 
-## 🚀 Installation
+## 🚀 **Installation Guide**
 
-### Prerequisites
+### **Live Demo via Codespace**
+
+Run the application directly in GitHub Codespaces with zero setup on your local machine.
+
+#### **Steps:**
+
+1. **Open in GitHub Codespaces:**
+    - Navigate to the repository on GitHub.
+    - Click on the **"Code"** button and select **"Open with Codespaces"**.
+    - If no Codespace exists, create one.
+
+2. **Wait for the environment to build:**
+    - The environment will automatically install the required PHP, Node.js, and MySQL dependencies using the
+      `devcontainer.json` and `Dockerfile`.
+
+3. **Run App Setup Command:**
+    - After the environment is ready, run the custom `app:setup` command to set up the database, cache, and Meilisearch.
+    - Inside the Codespace terminal:
+      ```sh
+      php artisan app:setup
+      ```
+
+4. **Start the Application:**
+    - Once setup is complete, start the services:
+      ```sh
+      php artisan app:up
+      ```
+
+5. **Access the App:**
+    - Visit `http://localhost:8000` to see TicketFlow in action inside your Codespace. 🎉
+
+---
+
+### **Local Installation**
+
+For running the TicketFlow application on your local machine, follow these steps.
+
+#### **Prerequisites:**
 
 Before you begin, ensure you have the following installed:
 
@@ -49,48 +86,56 @@ Before you begin, ensure you have the following installed:
 - Composer 🎼
 - Node.js and npm 📦
 - MySQL 🐬
+- Meilisearch (if using it for search functionality)
 
-### Installation
+#### **Steps:**
 
-1. Clone the repo and cd into it:
+1. **Clone the repository:**
 
    ```sh
    git clone https://github.com/mohammedbaqadir/ticketflow.git
    cd ticketflow
    ```
 
-2. Install PHP dependencies:
+2. **Install PHP dependencies:**
 
    ```sh
    composer install
    ```
 
-3. Install JavaScript dependencies:
+3. **Install JavaScript dependencies:**
 
    ```sh
    npm install
    ```
 
-4. Set up your environment:
+4. **Set up your environment:**
 
    ```sh
    cp .env.example .env
    php artisan key:generate
    ```
 
-5. Configure your database in `.env` and run migrations:
+5. **Configure your database in `.env`:**
+
+    - Update your `.env` file to reflect your local MySQL settings (DB credentials).
+
+6. **Run migrations:**
 
    ```sh
    php artisan migrate
    ```
 
-6. Build assets and start the server:
+7. **Build assets and start the server:**
+
    ```sh
    npm run build
    php artisan serve
    ```
 
-Voila! 🎉 Visit `http://localhost:8000` to see TicketFlow in action.
+   Now, visit `http://localhost:8000` to see TicketFlow in action. 🎉
+
+---
 
 ## 📚 Configuration Deep Dive
 

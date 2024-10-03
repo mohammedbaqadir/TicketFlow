@@ -74,6 +74,10 @@
             ] );
         }
 
+        public function scopeUnresolved( Builder $query ) : Builder
+        {
+            return $query->whereNot( 'status', '!=', 'resolved' );
+        }
 
         // Activity Log
         public function getActivitylogOptions() : LogOptions

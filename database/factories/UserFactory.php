@@ -5,6 +5,7 @@
 
     use App\Models\User;
     use Illuminate\Database\Eloquent\Factories\Factory;
+    use Illuminate\Support\Arr;
 
     /**
      * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
@@ -24,7 +25,7 @@
                 'name' => $this->faker->name(),
                 'email' => $this->faker->unique()->safeEmail(),
                 'password' => bcrypt( 'password' ),
-                'role' => 'employee'
+                'role' => Arr::random( [ 'employee', 'agent' ] )
             ];
         }
     }

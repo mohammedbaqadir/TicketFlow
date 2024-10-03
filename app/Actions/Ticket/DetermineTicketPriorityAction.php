@@ -90,7 +90,7 @@ This prompt simulates an **IT ticketing system** where an employee has submitted
 
         private function determineTimeout( string $priority ) : int
         {
-            return config( "ticket.priority_timeout.{$priority}", 8 );
+            return config( "enums.priority_timeout.{$priority}", 8 );
         }
 
     }

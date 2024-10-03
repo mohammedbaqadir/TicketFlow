@@ -1,8 +1,12 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace Database\Factories;
 
+    use App\Models\Ticket;
+    use App\Models\User;
     use Illuminate\Database\Eloquent\Factories\Factory;
+    use Illuminate\Support\Arr;
     use Illuminate\Support\Carbon;
 
     /**
@@ -10,6 +14,8 @@
      */
     class TicketFactory extends Factory
     {
+        protected $model = Ticket::class;
+
         /**
          * Define the model's default state.
          *
@@ -20,30 +26,15 @@
             return [
                 'title' => $this->faker->sentence,
                 'description' => $this->faker->paragraph,
-                'status' => $this->faker->randomElement( [
-                    'open', 'in-progress', 'awaiting-acceptance', 'escalated', 'resolved'
-                ] ),
-                'priority' => $this->faker->randomElement( [ 'low', 'medium', 'high' ] ),
+                'status' => Arr::random( array_keys( config( 'enums.ticketStatus' ) ) ),
+                'priority' => Arr::random( array_keys( config( 'enums.ticket_priority' ) ) ),
                 'timeout_at' => $this->faker->dateTimeBetween( '-2 hours', '+2 hours' ),
-                'requestor_id' => \App\Models\User::factory(),
-                'assignee_id' => \App\Models\User::factory(),
+                'requestor_id' => User::isEmployee()->inRandomOrder()->first()->id,
+                'assignee_id' => User::isAgent()->inRandomOrder()->first()->id,
                 'meeting_room' => $this->faker->optional()->word(),
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ];
         }
 
-        public function timedOut()
-        {
-            return $this->state( [
-                'timeout_at' => now()->subMinutes( 10 ), // Simulate timed-out tickets
-            ] );
-        }
-
-        public function notTimedOut()
-        {
-            return $this->state( [
-                'timeout_at' => now()->addMinutes( 10 ), // Simulate future timeouts
-            ] );
-        }
     }

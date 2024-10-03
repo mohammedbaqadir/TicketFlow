@@ -1,0 +1,40 @@
+{
+  "name": "TicketFlow",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "VARIANT": "8.2"
+    }
+  },
+  "postCreateCommand": "composer install && npm ci",
+  "forwardPorts": [
+    8000,
+    3306,
+    7700
+  ],
+  "customizations": {
+    "jetbrains": {
+      "backend": "PhpStorm"
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
+    "ghcr.io/devcontainers/features/mysql:1": {
+      "version": "8",
+      "mysqlRootPassword": "root",
+      "mysqlUser": "user",
+      "mysqlPassword": "password",
+      "mysqlDatabase": "TicketFlow"
+    },
+    "ghcr.io/devcontainers/features/php:1": {
+      "version": "8.2"
+    },
+    "ghcr.io/devcontainers/features/composer:2": {}
+  },
+  "remoteEnv": {
+    "GEMINI_API_KEY": "${GEMINI_API_KEY}",
+    "JITSI_VPAAS_MAGIC_COOKIE": "${JITSI_VPAAS_MAGIC_COOKIE}"
+  }
+}

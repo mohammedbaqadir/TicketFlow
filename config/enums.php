@@ -13,4 +13,9 @@
             'medium' => 'MEDIUM',
             'high' => 'HIGH',
         ],
+        'priority_timeout' => [
+            'low' => 8,
+            'medium' => 4,
+            'high' => 2,
+        ],
     ];
