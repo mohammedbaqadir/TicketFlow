@@ -7,10 +7,12 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ..:/workspace:cached
-    command: sleep infinity
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - JITSI_VPAAS_MAGIC_COOKIE=${JITSI_VPAAS_MAGIC_COOKIE}
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-dev_key_placeholder}
+    ports:
+      - "8000:8000"
     depends_on:
       - db
       - meilisearch
@@ -27,6 +29,8 @@ services:
       MYSQL_DATABASE: TicketFlow
       MYSQL_USER: user
       MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
     networks:
       - app-network
 
@@ -36,6 +40,8 @@ services:
       - meilisearch-data:/meili_data
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-dev_key_placeholder}
+    ports:
+      - "7700:7700"
     networks:
       - app-network
 
