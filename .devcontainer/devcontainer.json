@@ -1,6 +1,6 @@
 {
   "name": "TicketFlow",
-  "dockerComposeFile": "docker-compose.yml",
+  "dockerComposeFile": ".devcontainer/docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",
   "forwardPorts": [
@@ -8,7 +8,7 @@
     3306,
     7700
   ],
-  "postCreateCommand": "composer install && npm ci",
+  "postCreateCommand": "php artisan key:generate && composer install -vvv && php artisan package:discover --ansi && npm ci",
   "remoteEnv": {
     "GEMINI_API_KEY": "${GEMINI_API_KEY}",
     "JITSI_VPAAS_MAGIC_COOKIE": "${JITSI_VPAAS_MAGIC_COOKIE}"
