@@ -5,6 +5,7 @@
 
     use App\Observers\AnswerObserver;
     use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
     use Illuminate\Database\Eloquent\Model;
     use Illuminate\Database\Eloquent\Relations\BelongsTo;
     use Illuminate\Database\Eloquent\SoftDeletes;
@@ -16,6 +17,7 @@
     {
         use LogsActivity;
         use SoftDeletes;
+        use HasFactory;
 
         protected $fillable = [ 'content', 'is_accepted', 'submitter_id', 'ticket_id' ];
         protected $casts = [ 'is_accepted' => 'boolean' ];

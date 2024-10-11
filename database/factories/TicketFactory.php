@@ -26,7 +26,7 @@
             return [
                 'title' => $this->faker->sentence,
                 'description' => $this->faker->paragraph,
-                'status' => Arr::random( array_keys( config( 'enums.ticketStatus' ) ) ),
+                'status' => Arr::random( array_keys( config( 'enums.ticket_status' ) ) ),
                 'priority' => Arr::random( array_keys( config( 'enums.ticket_priority' ) ) ),
                 'timeout_at' => $this->faker->dateTimeBetween( '-2 hours', '+2 hours' ),
                 'requestor_id' => User::isEmployee()->inRandomOrder()->first()->id,
