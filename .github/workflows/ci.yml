@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -27,13 +27,14 @@ jobs:
           echo "APP_NAME=TicketFlow" >> $GITHUB_ENV
           echo "APP_ENV=testing" >> $GITHUB_ENV
           echo "APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')" >> $GITHUB_ENV
+          echo "APP_URL=http://localhost" >> $GITHUB_ENV  # Added APP_URL to resolve missing env var error
           echo "DB_CONNECTION=mysql" >> $GITHUB_ENV
           echo "DB_DATABASE=test_db" >> $GITHUB_ENV
           echo "DB_USERNAME=root" >> $GITHUB_ENV
           echo "DB_PASSWORD=" >> $GITHUB_ENV
 
       - name: Cache Composer Dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: vendor
           key: composer-cache-${{ hashFiles('composer.lock') }}
