@@ -27,11 +27,13 @@ jobs:
           echo "APP_NAME=TicketFlow" >> $GITHUB_ENV
           echo "APP_ENV=testing" >> $GITHUB_ENV
           echo "APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')" >> $GITHUB_ENV
-          echo "APP_URL=http://localhost" >> $GITHUB_ENV  # Added APP_URL to resolve missing env var error
+          echo "APP_URL=http://localhost" >> $GITHUB_ENV  
           echo "DB_CONNECTION=mysql" >> $GITHUB_ENV
+          echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV  
           echo "DB_DATABASE=test_db" >> $GITHUB_ENV
           echo "DB_USERNAME=root" >> $GITHUB_ENV
           echo "DB_PASSWORD=" >> $GITHUB_ENV
+
 
       - name: Cache Composer Dependencies
         uses: actions/cache@v4
