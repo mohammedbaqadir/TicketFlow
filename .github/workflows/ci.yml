@@ -13,16 +13,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.2
           extensions: mbstring, pdo, mysql
-
-      - name: Install Dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
 
       - name: Cache Composer Dependencies
         uses: actions/cache@v2
@@ -31,8 +29,18 @@ jobs:
           key: composer-cache-${{ hashFiles('composer.lock') }}
           restore-keys: composer-cache-
 
+      - name: Install Dependencies
+        run: composer install --prefer-dist --no-progress
+
       - name: Set up MySQL
         run: sudo service mysql start
+
+      - name: Set Testing Environment Variables
+        run: |
+          echo "DB_CONNECTION=mysql" >> $GITHUB_ENV
+          echo "DB_DATABASE=test_db" >> $GITHUB_ENV
+          echo "DB_USERNAME=root" >> $GITHUB_ENV
+          echo "DB_PASSWORD=" >> $GITHUB_ENV
 
       - name: Run Migrations
         run: php artisan migrate --env=testing
