@@ -22,6 +22,16 @@ jobs:
           php-version: 8.2
           extensions: mbstring, pdo, mysql
 
+      - name: Set up Environment Variables
+        run: |
+          echo "APP_NAME=TicketFlow" >> $GITHUB_ENV
+          echo "APP_ENV=testing" >> $GITHUB_ENV
+          echo "APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')" >> $GITHUB_ENV
+          echo "DB_CONNECTION=mysql" >> $GITHUB_ENV
+          echo "DB_DATABASE=test_db" >> $GITHUB_ENV
+          echo "DB_USERNAME=root" >> $GITHUB_ENV
+          echo "DB_PASSWORD=" >> $GITHUB_ENV
+
       - name: Cache Composer Dependencies
         uses: actions/cache@v2
         with:
@@ -34,13 +44,6 @@ jobs:
 
       - name: Set up MySQL
         run: sudo service mysql start
-
-      - name: Set Testing Environment Variables
-        run: |
-          echo "DB_CONNECTION=mysql" >> $GITHUB_ENV
-          echo "DB_DATABASE=test_db" >> $GITHUB_ENV
-          echo "DB_USERNAME=root" >> $GITHUB_ENV
-          echo "DB_PASSWORD=" >> $GITHUB_ENV
 
       - name: Run Migrations
         run: php artisan migrate --env=testing
