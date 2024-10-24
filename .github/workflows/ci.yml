@@ -54,6 +54,12 @@ jobs:
       - name: Set up MySQL
         run: |
           sudo service mysql start
+          # Temporarily disable password authentication for root
+          sudo mysql --execute="SET GLOBAL validate_password.policy = LOW;"
+          sudo mysql --execute="SET GLOBAL validate_password.length = 6;"
+          sudo mysql --execute="UPDATE mysql.user SET authentication_string=null WHERE User='root';"
+          sudo mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED BY '';"
+          sudo mysql --execute="FLUSH PRIVILEGES;"
           # Create a new MySQL user for CI
           sudo mysql -e "CREATE USER 'ci_user'@'localhost' IDENTIFIED BY 'ci_password';"
           # Grant all privileges to the ci_user for the test_db database
@@ -61,6 +67,7 @@ jobs:
           sudo mysql -e "FLUSH PRIVILEGES;"
           # Create the test database
           sudo mysql -e "CREATE DATABASE IF NOT EXISTS test_db;"
+
 
 
 
