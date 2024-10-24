@@ -34,11 +34,9 @@ jobs:
           echo "DB_DATABASE=test_db" >> $GITHUB_ENV
           echo "DB_USERNAME=root" >> $GITHUB_ENV
           echo "DB_PASSWORD=" >> $GITHUB_ENV
-          # Meilisearch-specific environment variables
           echo "SCOUT_DRIVER=meilisearch" >> $GITHUB_ENV
           echo "MEILISEARCH_HOST=http://localhost:7700" >> $GITHUB_ENV
-          echo "MEILISEARCH_KEY=aSampleMasterKey" >> $GITHUB_ENV  # Test key for Meilisearch
-          # Disable external APIs for testing
+          echo "MEILISEARCH_KEY=aSampleMasterKey" >> $GITHUB_ENV
           echo "GEMINI_API_KEY=" >> $GITHUB_ENV
           echo "JITSI_VPAAS_MAGIC_COOKIE=" >> $GITHUB_ENV
 
@@ -53,13 +51,15 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Set up MySQL
-        run: sudo service mysql start
+        run: |
+          sudo service mysql start
+          sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
+          sudo mysql -e "FLUSH PRIVILEGES;"
 
       - name: Install and Start Meilisearch
         run: |
           curl -L https://install.meilisearch.com | sh
           nohup ./meilisearch --master-key "aSampleMasterKey" > meilisearch.log 2>&1 &
-
 
       - name: Run Migrations
         run: php artisan migrate --env=testing
