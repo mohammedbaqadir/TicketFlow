@@ -1,0 +1,31 @@
+name: Deploy TicketFlow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deployment_key
+          chmod 600 ~/.ssh/deployment_key
+          ssh-keyscan -H ticketflow.duckdns.org >> ~/.ssh/known_hosts
+
+      - name: Deploy to AWS EC2
+        run: |
+          ssh -i ~/.ssh/deployment_key ticket_flow@ticketflow.duckdns.org '
+            cd code &&
+            git pull origin main &&
+            composer install &&
+            php artisan migrate --force &&
+            php artisan cache:clear
+          '
