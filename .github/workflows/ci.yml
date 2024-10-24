@@ -30,11 +30,17 @@ jobs:
           echo "APP_URL=http://localhost" >> $GITHUB_ENV
           echo "DB_CONNECTION=mysql" >> $GITHUB_ENV
           echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV
-          echo "DB_PORT=3306" >> $GITHUB_ENV 
+          echo "DB_PORT=3306" >> $GITHUB_ENV
           echo "DB_DATABASE=test_db" >> $GITHUB_ENV
           echo "DB_USERNAME=root" >> $GITHUB_ENV
           echo "DB_PASSWORD=" >> $GITHUB_ENV
-
+          # Meilisearch-specific environment variables
+          echo "SCOUT_DRIVER=meilisearch" >> $GITHUB_ENV
+          echo "MEILISEARCH_HOST=http://localhost:7700" >> $GITHUB_ENV
+          echo "MEILISEARCH_KEY=aSampleMasterKey" >> $GITHUB_ENV  # Test key for Meilisearch
+          # Disable external APIs for testing
+          echo "GEMINI_API_KEY=" >> $GITHUB_ENV
+          echo "JITSI_VPAAS_MAGIC_COOKIE=" >> $GITHUB_ENV
 
       - name: Cache Composer Dependencies
         uses: actions/cache@v4
@@ -49,8 +55,17 @@ jobs:
       - name: Set up MySQL
         run: sudo service mysql start
 
+      - name: Install and Start Meilisearch
+        run: |
+          curl -L https://install.meilisearch.com | sh
+          nohup ./meilisearch --master-key "aSampleMasterKey" > meilisearch.log 2>&1 &
+
+
       - name: Run Migrations
         run: php artisan migrate --env=testing
+
+      - name: Scout Import for Meilisearch
+        run: php artisan scout:import "App\Models\Ticket"
 
       - name: Run Pest Tests
         run: ./vendor/bin/pest
