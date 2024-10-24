@@ -32,13 +32,14 @@ jobs:
           echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV
           echo "DB_PORT=3306" >> $GITHUB_ENV
           echo "DB_DATABASE=test_db" >> $GITHUB_ENV
-          echo "DB_USERNAME=root" >> $GITHUB_ENV
-          echo "DB_PASSWORD=" >> $GITHUB_ENV
+          echo "DB_USERNAME=ci_user" >> $GITHUB_ENV  # Use new MySQL user
+          echo "DB_PASSWORD=ci_password" >> $GITHUB_ENV  # Use new MySQL user password
           echo "SCOUT_DRIVER=meilisearch" >> $GITHUB_ENV
           echo "MEILISEARCH_HOST=http://localhost:7700" >> $GITHUB_ENV
           echo "MEILISEARCH_KEY=aSampleMasterKey" >> $GITHUB_ENV
           echo "GEMINI_API_KEY=" >> $GITHUB_ENV
           echo "JITSI_VPAAS_MAGIC_COOKIE=" >> $GITHUB_ENV
+
 
       - name: Cache Composer Dependencies
         uses: actions/cache@v4
@@ -53,12 +54,14 @@ jobs:
       - name: Set up MySQL
         run: |
           sudo service mysql start
-          # Allow root to connect without a password
-          sudo mysql -e "UPDATE mysql.user SET authentication_string=null WHERE User='root';"
-          sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '';"
+          # Create a new MySQL user for CI
+          sudo mysql -e "CREATE USER 'ci_user'@'localhost' IDENTIFIED BY 'ci_password';"
+          # Grant all privileges to the ci_user for the test_db database
+          sudo mysql -e "GRANT ALL PRIVILEGES ON test_db.* TO 'ci_user'@'localhost';"
           sudo mysql -e "FLUSH PRIVILEGES;"
           # Create the test database
           sudo mysql -e "CREATE DATABASE IF NOT EXISTS test_db;"
+
 
 
       - name: Install and Start Meilisearch
