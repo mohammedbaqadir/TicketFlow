@@ -53,8 +53,13 @@ jobs:
       - name: Set up MySQL
         run: |
           sudo service mysql start
-          sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
+          # Allow root to connect without a password
+          sudo mysql -e "UPDATE mysql.user SET authentication_string=null WHERE User='root';"
+          sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '';"
           sudo mysql -e "FLUSH PRIVILEGES;"
+          # Create the test database
+          sudo mysql -e "CREATE DATABASE IF NOT EXISTS test_db;"
+
 
       - name: Install and Start Meilisearch
         run: |
