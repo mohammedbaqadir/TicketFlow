@@ -1,0 +1,80 @@
+#!/bin/sh
+
+# Pre-push git hook: Validates branch name and GitHub issue existence
+# Blocks push if:
+# 1. Branch name doesn't match format: issue-#<number>-<description>
+# 2. Referenced issue doesn't exist in GitHub
+# 3. Referenced issue is closed
+# 4. GitHub token is missing/invalid
+
+set -e  # Exit on any error
+
+# Get current branch name
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+if [ -z "$BRANCH_NAME" ]; then
+    echo "ERROR: Could not determine branch name" >&2
+    exit 1
+fi
+
+# Skip checks for protected branches
+if [ "$BRANCH_NAME" = "main" ]; then
+    echo "INFO: Skipping checks for protected branch $PROTECTED"
+    exit 0
+fi
+
+# Validate branch name format with detailed error message
+if ! echo "$BRANCH_NAME" | grep -Eq "^issue-#[0-9]+-[a-z0-9-]+$"; then
+    echo "ERROR: Branch name '$BRANCH_NAME' is invalid" >&2
+    echo "Required format: issue-#<number>-<description>" >&2
+    echo "Example: issue-#123-add-login-feature" >&2
+    exit 1
+fi
+
+# Extract issue number 
+ISSUE_NUMBER=$(echo "$BRANCH_NAME" | grep -o -P "(?<=issue-#)[0-9]+" || echo "")
+if [ -z "$ISSUE_NUMBER" ]; then
+    echo "ERROR: Could not extract issue number from branch name" >&2
+    exit 1
+fi
+
+# Get GitHub token 
+ENV_FILE=".env"
+if [ ! -f "$ENV_FILE" ]; then
+    echo "ERROR: $ENV_FILE file not found" >&2
+    echo "Please create $ENV_FILE with GITHUB_TOKEN=your_token" >&2
+    exit 1
+fi
+
+GITHUB_TOKEN=$(grep -E "^GITHUB_TOKEN=" "$ENV_FILE" | cut -d "=" -f2- | tr -d '"' || echo "")
+if [ -z "$GITHUB_TOKEN" ]; then
+    echo "ERROR: GITHUB_TOKEN not found in $ENV_FILE" >&2
+    echo "Please add GITHUB_TOKEN=your_token to $ENV_FILE" >&2
+    exit 1
+fi
+
+# Check if issue exists and is open
+RESPONSE=$(curl -s -m 10 -H "Authorization: token $GITHUB_TOKEN" \
+    "https://api.github.com/repos/mohammedbaqadir/TicketFlow/issues/$ISSUE_NUMBER" || echo '{"message": "Connection failed"}')
+
+if echo "$RESPONSE" | grep -q '"message": "Bad credentials"'; then
+    echo "ERROR: Invalid GitHub token" >&2
+    exit 1
+fi
+
+if echo "$RESPONSE" | grep -q '"message": "Not Found"'; then
+    echo "ERROR: Issue #$ISSUE_NUMBER not found" >&2
+    exit 1
+fi
+
+if echo "$RESPONSE" | grep -q '"message": "Connection failed"'; then
+    echo "ERROR: Failed to connect to GitHub API" >&2
+    exit 1
+fi
+
+if ! echo "$RESPONSE" | grep -q '"state": "open"'; then
+    echo "ERROR: Issue #$ISSUE_NUMBER is not open" >&2
+    echo "Please make sure you're working on an open issue" >&2
+    exit 1
+fi
+
+exit 0
