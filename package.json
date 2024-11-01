@@ -6,6 +6,11 @@
     "build": "vite build",
     "prepare": "husky"
   },
+  "config": {
+    "commitizen": {
+      "path": "@commitlint/cz-commitlint"
+    }
+  },
   "devDependencies": {
     "@commitlint/cli": "^19.5.0",
     "@commitlint/config-conventional": "^19.5.0",
@@ -16,7 +21,6 @@
     "autoprefixer": "^10.4.19",
     "axios": "^1.6.4",
     "commitizen": "^4.3.1",
-    "cz-emoji": "^1.3.2-canary.2",
     "husky": "^9.1.6",
     "inquirer": "^9.3.7",
     "laravel-vite-plugin": "^1.0",
