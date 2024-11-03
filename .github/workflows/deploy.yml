@@ -1,31 +1,45 @@
-name: Deploy TicketFlow
+name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: [ "Release" ]
+    types:
+      - completed
     branches:
       - main
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
+    name: Deploy to Production
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up SSH key
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deployment_key
+          echo "$SSH_KEY" > ~/.ssh/deployment_key
           chmod 600 ~/.ssh/deployment_key
           ssh-keyscan -H ticketflow.duckdns.org >> ~/.ssh/known_hosts
 
-      - name: Deploy to AWS EC2
+      - name: Deploy to EC2
         run: |
           ssh -i ~/.ssh/deployment_key ticket_flow@ticketflow.duckdns.org '
             cd code &&
             git pull origin main &&
-            composer install &&
+            composer install --no-dev --optimize-autoloader &&
+            php artisan config:cache &&
+            php artisan route:cache &&
+            php artisan view:cache &&
             php artisan migrate --force &&
             php artisan cache:clear
           '
