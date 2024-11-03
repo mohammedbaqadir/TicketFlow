@@ -2,43 +2,44 @@ export default {
   extends: ['@commitlint/config-conventional'],
   rules: {
     'type-enum': [2, 'always', [
-      'feat',
-      'fix',
-      'docs',
-      'style',
-      'refactor',
-      'perf',
-      'test',
-      'build',
-      'ci',
-      'chore',
-      'revert',
-      'security'
+      // Types (HOW the change is made)
+      'feat',     // New feature
+      'fix',      // Bug fix
+      'docs',    // Documentation only
+      'style',   // Formatting, typos, etc
+      'refactor',// Code change that neither fixes a bug nor adds a feature
+      'perf',   // Performance improvement
+      'test',   // Adding missing tests
+      'build',   // Changes that affect the build system or external dependencies
+      'ci',   // Changes to CI configuration files and scripts
+      'chore',   // Other changes that don't modify src or test files
+      'revert',  // Reverts a previous commit
+      'security', // Security improvements
     ]],
     'scope-enum': [2, 'always', [
+      // Scopes (WHAT is being changed)
       // Core
-      'core',
-      'deps',
-      'config',
+      'core',    // Core application logic
+      'deps',   // Dependencies
+      'config', // Configuration files
 
       // Security & Auth
-      'security',  // Added back
-      'auth',
+      'auth',   // Authentication/Authorization
 
       // Application Layers
-      'api',
-      'ui',
-      'db',
+      'api',  // API related changes
+      'ui',   // User interface
+      'db',   // Database
 
       // Infrastructure
-      'ci',
-      'build',
+      'infra',  // Infrastructure related changes
+      'deploy', // Deployment specific changes
 
       // Documentation
-      'docs',
+      'docs',  // Documentation
 
       // Testing
-      'test'
+      'test',    // Test infrastructure
     ]],
     'scope-case': [2, 'always', 'lowercase'],
     'scope-empty': [2, 'never'],
