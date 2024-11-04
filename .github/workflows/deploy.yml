@@ -22,6 +22,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: 'npm'
+
+      - name: Set up Production Environment Variables
+        run: |
+          echo "APP_NAME=TicketFlow" >> $GITHUB_ENV
+          echo "APP_ENV=production" >> $GITHUB_ENV
+          echo "APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')" >> $GITHUB_ENV
+          echo "APP_URL=https://ticketflow.duckdns.org" >> $GITHUB_ENV
+          echo "DB_CONNECTION=mysql" >> $GITHUB_ENV
+          echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV
+          echo "DB_PORT=3306" >> $GITHUB_ENV
+          echo "DB_DATABASE=ticketflow" >> $GITHUB_ENV
+          echo "DB_USERNAME=ticket_flow" >> $GITHUB_ENV
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> $GITHUB_ENV
+          echo "SCOUT_DRIVER=meilisearch" >> $GITHUB_ENV
+          echo "MEILISEARCH_HOST=http://localhost:7700" >> $GITHUB_ENV
+          echo "MEILISEARCH_KEY=${{ secrets.MEILISEARCH_KEY }}" >> $GITHUB_ENV
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> $GITHUB_ENV
+          echo "JITSI_VPAAS_MAGIC_COOKIE=${{ secrets.JITSI_VPAAS_MAGIC_COOKIE }}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: |
+          composer install --no-dev --optimize-autoloader
+          npm run build
+
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
@@ -36,9 +68,6 @@ jobs:
           ssh -i ~/.ssh/deployment_key ticket_flow@ticketflow.duckdns.org '
             cd code &&
             git pull origin main &&
-            composer install --no-dev --optimize-autoloader &&
-            npm ci &&
-            npm run build &&
             php artisan down &&
             php artisan config:cache &&
             php artisan route:cache &&
