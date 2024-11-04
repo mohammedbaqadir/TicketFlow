@@ -36,6 +36,12 @@ jobs:
           coverage: pcov
           cache: composer
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: 'npm'
+
       - name: Get composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
@@ -46,6 +52,12 @@ jobs:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
 
       - name: Set up Environment Variables
         run: |
@@ -82,6 +94,7 @@ jobs:
         run: |
           curl -L https://install.meilisearch.com | sh
           nohup ./meilisearch --master-key "aSampleMasterKey" > meilisearch.log 2>&1 &
+          sleep 5  # Give Meilisearch time to start
 
       - name: Scout Import
         run: php artisan scout:import "App\Models\Ticket"
