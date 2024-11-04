@@ -24,10 +24,16 @@ jobs:
       github.event.workflow_run.conclusion == 'success' && 
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
+
+    outputs:
+      released: ${{ steps.release.outputs.released }}
+      version: ${{ steps.release.outputs.version }}
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -35,10 +41,20 @@ jobs:
           node-version: "lts/*"
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm install -g semantic-release @semantic-release/github
-
       - name: Create Release
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        run: |
+          npm install -g semantic-release @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/github
+          RELEASE_OUTPUT=$(npx semantic-release --dry-run)
+          
+          if echo "$RELEASE_OUTPUT" | grep -q "The next release version is"; then
+            echo "NEW_VERSION=$(echo "$RELEASE_OUTPUT" | grep "The next release version is" | sed 's/.*is \(.*\)/\1/')" >> $GITHUB_ENV
+            echo "released=true" >> $GITHUB_OUTPUT
+            echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+            npx semantic-release
+          else
+            echo "No new version to release"
+            echo "released=false" >> $GITHUB_OUTPUT
+          fi
