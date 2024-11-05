@@ -3,98 +3,207 @@ name: Deploy
 on:
   workflow_run:
     workflows: [ "Release" ]
-    types:
-      - completed
-    branches:
-      - main
+    types: [ completed ]
+    branches: [ main ]
 
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  SSH_BASE_CMD: ssh -i ~/.ssh/deployment_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts
+  DEPLOY_HOST: ticketflow.duckdns.org
+  CMD_TIMEOUT: 300
+
 jobs:
   deploy:
     name: Deploy to Production
-    if: github.event.workflow_run.conclusion == 'success'
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      !contains(github.event.workflow_run.head_commit.message, '[skip deploy]')
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 30
 
     steps:
       - name: Configure SSH
-        env:
-          SSH_KEY: ${{ secrets.PROD_GH_RUNNER_TO_EC2_KEY }}
+        id: ssh-setup
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deployment_key
+          echo "${{ secrets.PROD_GH_RUNNER_TO_EC2_KEY }}" > ~/.ssh/deployment_key
           chmod 600 ~/.ssh/deployment_key
-          ssh-keyscan -H ticketflow.duckdns.org >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ env.DEPLOY_HOST }} > ~/.ssh/known_hosts
+          
+          # Test connection with retry
+          max_attempts=3
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            if ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "exit"; then
+              echo "SSH connection successful"
+              break
+            fi
+            echo "Attempt $attempt of $max_attempts failed. Retrying..."
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          
+          if [ $attempt -gt $max_attempts ]; then
+            echo "Failed to establish SSH connection after $max_attempts attempts"
+            exit 1
+          fi
 
-      - name: Deploy to EC2
-        env:
-          PROD_APP_URL: ${{ secrets.PROD_APP_URL }}
-          PROD_DB_HOST: ${{ secrets.PROD_DB_HOST }}
-          PROD_DB_PORT: ${{ secrets.PROD_DB_PORT }}
-          PROD_DB_NAME: ${{ secrets.PROD_DB_NAME }}
-          PROD_DB_USER: ${{ secrets.PROD_DB_USER }}
-          PROD_DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
-          PROD_MEILISEARCH_HOST: ${{ secrets.PROD_MEILISEARCH_HOST }}
-          PROD_MEILISEARCH_KEY: ${{ secrets.PROD_MEILISEARCH_KEY }}
-          PROD_GEMINI_API_KEY: ${{ secrets.PROD_GEMINI_API_KEY }}
-          PROD_JITSI_COOKIE: ${{ secrets.PROD_JITSI_COOKIE }}
+      - name: Create deployment marker
+        id: deployment-start
         run: |
-          ssh -i ~/.ssh/deployment_key ${{ secrets.PROD_DEPLOY_USER }}@ticketflow.duckdns.org '
-            cd ${{ secrets.PROD_DEPLOY_PATH }} &&
-            # Put site in maintenance mode
-            php artisan down &&
-          
-            # Pull latest code
-            git pull origin main &&
-          
-            # Update environment file
-            echo "APP_NAME=TicketFlow" > .env &&
-            echo "APP_ENV=production" >> .env &&
-            echo "APP_KEY=${{ secrets.PROD_APP_KEY }}" >> .env &&
-            echo "APP_DEBUG=false" >> .env &&
-            echo "APP_URL=$PROD_APP_URL" >> .env &&
-            echo "" >> .env &&
-            echo "DB_CONNECTION=mysql" >> .env &&
-            echo "DB_HOST=$PROD_DB_HOST" >> .env &&
-            echo "DB_PORT=$PROD_DB_PORT" >> .env &&
-            echo "DB_DATABASE=$PROD_DB_NAME" >> .env &&
-            echo "DB_USERNAME=$PROD_DB_USER" >> .env &&
-            echo "DB_PASSWORD=$PROD_DB_PASSWORD" >> .env &&
-            echo "" >> .env &&
-            echo "SCOUT_DRIVER=meilisearch" >> .env &&
-            echo "MEILISEARCH_HOST=$PROD_MEILISEARCH_HOST" >> .env &&
-            echo "MEILISEARCH_KEY=$PROD_MEILISEARCH_KEY" >> .env &&
-            echo "" >> .env &&
-            echo "GEMINI_API_KEY=$PROD_GEMINI_API_KEY" >> .env &&
-            echo "JITSI_VPAAS_MAGIC_COOKIE=$PROD_JITSI_COOKIE" >> .env &&  
-          
-          # Install/update dependencies
-            composer install --no-dev --optimize-autoloader &&
-            npm ci &&
-            npm run build &&
+          DEPLOY_ID=$(date +%Y%m%d_%H%M%S)
+          echo "deploy_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
+          ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
+            "echo '$DEPLOY_ID' > ${{ secrets.PROD_DEPLOY_PATH }}/.deployment_in_progress"
 
-            # Clear all caches
-            php artisan optimize:clear &&
-          
-            # Run migrations
-            php artisan migrate --force &&
+      - name: Enable maintenance mode
+        id: maintenance-mode
+        run: |
+          ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
+            "cd ${{ secrets.PROD_DEPLOY_PATH }} && php artisan down --render='maintenance' --retry=60"
 
-            # Generate caches
-            php artisan optimize &&
-            php artisan view:cache &&
+      - name: Backup current state
+        id: backup
+        run: |
+          BACKUP_DIR="pre_deploy_backup_$(date +%Y%m%d_%H%M%S)"
+          ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'ENDSSH'
+            cd ${{ secrets.PROD_DEPLOY_PATH }}
+            mkdir -p backups/$BACKUP_DIR
+            cp .env backups/$BACKUP_DIR/.env
+            php artisan config:clear
+            php artisan route:clear
+            php artisan cache:clear
+          ENDSSH
+
+      - name: Generate and validate env file
+        id: env-setup
+        run: |
+          # Create temporary env file with proper escaping
+          cat << 'EOL' > env.production
+          APP_NAME="TicketFlow"
+          APP_ENV=production
+          APP_KEY="${{ secrets.PROD_APP_KEY }}"
+          APP_DEBUG=false
+          APP_URL="${{ secrets.PROD_APP_URL }}"
+
+          DB_CONNECTION=mysql
+          DB_HOST="${{ secrets.PROD_DB_HOST }}"
+          DB_PORT="${{ secrets.PROD_DB_PORT }}"
+          DB_DATABASE="${{ secrets.PROD_DB_NAME }}"
+          DB_USERNAME="${{ secrets.PROD_DB_USER }}"
+          DB_PASSWORD="${{ secrets.PROD_DB_PASSWORD }}"
+
+          SCOUT_DRIVER=meilisearch
+          MEILISEARCH_HOST="${{ secrets.PROD_MEILISEARCH_HOST }}"
+          MEILISEARCH_KEY="${{ secrets.PROD_MEILISEARCH_KEY }}"
+
+          GEMINI_API_KEY="${{ secrets.PROD_GEMINI_API_KEY }}"
+          JITSI_VPAAS_MAGIC_COOKIE="${{ secrets.PROD_JITSI_COOKIE }}"
+          EOL
+
+          # Upload and validate
+          scp -i ~/.ssh/deployment_key env.production ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ secrets.PROD_DEPLOY_PATH }}/.env
           
-            # Setup storage link if needed
-            php artisan storage:link || true &&
+          ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
+            "cd ${{ secrets.PROD_DEPLOY_PATH }} && chmod 600 .env && php artisan env:check"
+
+      - name: Deploy application
+        id: deploy
+        timeout-minutes: 20
+        run: |
+          ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'ENDSSH'
+            cd ${{ secrets.PROD_DEPLOY_PATH }}
           
-            # Handle queue workers
-            php artisan queue:restart &&
+            # Track deployment state
+            echo "DEPLOYING" > deployment_status
           
-            # Update search indices
-            php artisan scout:sync-index-settings &&
+            # Core deployment steps with status checks
+            deploy_step() {
+              echo "Executing: $1"
+              if ! eval "$1"; then
+                echo "FAILED" > deployment_status
+                echo "Failed at step: $1"
+                return 1
+              fi
+              return 0
+            }
           
-            # Bring site back up
+            deploy_step "git pull origin main" &&
+            deploy_step "composer install --no-dev --optimize-autoloader --no-interaction" &&
+            deploy_step "npm ci" &&
+            deploy_step "npm run build" &&
+            deploy_step "php artisan migrate --force" &&
+            deploy_step "php artisan optimize:clear" &&
+            deploy_step "php artisan optimize" &&
+            deploy_step "php artisan view:cache" &&
+            deploy_step "php artisan storage:link || true" &&
+            deploy_step "php artisan queue:restart" &&
+            deploy_step "php artisan scout:sync-index-settings"
+          
+            if [ $? -eq 0 ]; then
+              echo "SUCCESS" > deployment_status
+            fi
+          ENDSSH
+
+      - name: Health check
+        id: health-check
+        if: success()
+        run: |
+          ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'ENDSSH'
+            cd ${{ secrets.PROD_DEPLOY_PATH }}
+          
+            # Check essential services
+            checks=(
+              "php artisan migrate:status"
+              "php artisan queue:status"
+              "curl -s http://localhost/health"
+            )
+          
+            for check in "${checks[@]}"; do
+              if ! eval "$check"; then
+                echo "Health check failed: $check"
+                exit 1
+              fi
+            done
+          ENDSSH
+
+      - name: Finalize deployment
+        id: finalize
+        if: success()
+        run: |
+          ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'ENDSSH'
+            cd ${{ secrets.PROD_DEPLOY_PATH }}
             php artisan up
-          '
+            rm -f .deployment_in_progress deployment_status
+          ENDSSH
+
+      - name: Handle deployment failure
+        if: failure()
+        run: |
+          ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'ENDSSH'
+            cd ${{ secrets.PROD_DEPLOY_PATH }}
+            php artisan down --message='Maintenance in progress due to deployment issues. Please try again later.' --retry=60
+            echo "Deployment failed at $(date)" >> deployment_failures.log
+          ENDSSH
+
+      - name: Notify deployment status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = context.job.status;
+            const emoji = status === 'success' ? '✅' : '❌';
+            const { owner, repo } = context.repo;
+            
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title: `${emoji} Deployment to production ${status}`,
+              body: `Deployment to production ${status} for commit ${context.sha}.
+            
+              [View deployment logs](${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId})`
+            });
