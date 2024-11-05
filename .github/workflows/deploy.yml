@@ -1,31 +1,102 @@
-name: Deploy TicketFlow
+name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: [ "Release" ]
+    types:
+      - completed
     branches:
       - main
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
+    name: Deploy to Production
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up SSH key
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.PROD_GH_RUNNER_TO_EC2_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deployment_key
+          echo "$SSH_KEY" > ~/.ssh/deployment_key
           chmod 600 ~/.ssh/deployment_key
           ssh-keyscan -H ticketflow.duckdns.org >> ~/.ssh/known_hosts
 
-      - name: Deploy to AWS EC2
+      - name: Deploy to EC2
+        env:
+          PROD_APP_URL: ${{ secrets.PROD_APP_URL }}
+          PROD_DB_HOST: ${{ secrets.PROD_DB_HOST }}
+          PROD_DB_PORT: ${{ secrets.PROD_DB_PORT }}
+          PROD_DB_NAME: ${{ secrets.PROD_DB_NAME }}
+          PROD_DB_USER: ${{ secrets.PROD_DB_USER }}
+          PROD_DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+          PROD_MEILISEARCH_HOST: ${{ secrets.PROD_MEILISEARCH_HOST }}
+          PROD_MEILISEARCH_KEY: ${{ secrets.PROD_MEILISEARCH_KEY }}
+          PROD_GEMINI_API_KEY: ${{ secrets.PROD_GEMINI_API_KEY }}
+          PROD_JITSI_COOKIE: ${{ secrets.PROD_JITSI_COOKIE }}
         run: |
-          ssh -i ~/.ssh/deployment_key ticket_flow@ticketflow.duckdns.org '
-            cd code &&
+          ssh -i ~/.ssh/deployment_key ${{ secrets.PROD_DEPLOY_USER }}@ticketflow.duckdns.org '
+            cd ${{ secrets.PROD_DEPLOY_PATH }} &&
+            # Put site in maintenance mode
+            php artisan down &&
+
+            # Pull latest code
             git pull origin main &&
-            composer install &&
+
+            # Update environment file
+            cat > .env << "EOF"
+            APP_NAME=TicketFlow
+            APP_ENV=production
+            APP_KEY=${{ secrets.PROD_APP_KEY }}
+            APP_DEBUG=false
+            APP_URL='$PROD_APP_URL'
+          
+            DB_CONNECTION=mysql
+            DB_HOST='$PROD_DB_HOST'
+            DB_PORT='$PROD_DB_PORT'
+            DB_DATABASE='$PROD_DB_NAME'
+            DB_USERNAME='$PROD_DB_USER'
+            DB_PASSWORD='$PROD_DB_PASSWORD'
+          
+            SCOUT_DRIVER=meilisearch
+            MEILISEARCH_HOST='$PROD_MEILISEARCH_HOST'
+            MEILISEARCH_KEY='$PROD_MEILISEARCH_KEY'
+          
+            GEMINI_API_KEY='$PROD_GEMINI_API_KEY'
+            JITSI_VPAAS_MAGIC_COOKIE='$PROD_JITSI_COOKIE'
+            EOF
+
+            # Install/update dependencies
+            composer install --no-dev --optimize-autoloader &&
+            npm ci &&
+            npm run build &&
+
+            # Clear all caches
+            php artisan optimize:clear &&
+          
+            # Run migrations
             php artisan migrate --force &&
-            php artisan cache:clear
+
+            # Generate caches
+            php artisan optimize &&
+            php artisan view:cache &&
+          
+            # Setup storage link if needed
+            php artisan storage:link || true &&
+          
+            # Handle queue workers
+            php artisan queue:restart &&
+          
+            # Update search indices
+            php artisan scout:sync-index-settings &&
+          
+            # Bring site back up
+            php artisan up
           '

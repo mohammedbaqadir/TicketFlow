@@ -1,9 +1,16 @@
 name: Release
 
 on:
-  push:
+  workflow_run:
+    workflows: [ "CI" ]
+    types:
+      - completed
     branches:
       - main
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -12,27 +19,42 @@ permissions:
 
 jobs:
   release:
-    name: Release
-    needs: [ test ]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+    name: Create Release
+    if: >
+      github.event.workflow_run.conclusion == 'success' && 
+      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
 
+    outputs:
+      released: ${{ steps.release.outputs.released }}
+      version: ${{ steps.release.outputs.version }}
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
+          cache: 'npm'
 
-      - name: Install semantic-release
-        run: |
-          npm install -g semantic-release @semantic-release/github
-
-      - name: Release
+      - name: Create Release
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        run: |
+          npm install -g semantic-release @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/github
+          RELEASE_OUTPUT=$(npx semantic-release --dry-run)
+          
+          if echo "$RELEASE_OUTPUT" | grep -q "The next release version is"; then
+            echo "NEW_VERSION=$(echo "$RELEASE_OUTPUT" | grep "The next release version is" | sed 's/.*is \(.*\)/\1/')" >> $GITHUB_ENV
+            echo "released=true" >> $GITHUB_OUTPUT
+            echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+            npx semantic-release
+          else
+            echo "No new version to release"
+            echo "released=false" >> $GITHUB_OUTPUT
+          fi

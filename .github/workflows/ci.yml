@@ -1,15 +1,18 @@
-name: TicketFlow CI
+name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
+    name: Test Suite
     runs-on: ubuntu-latest
 
     services:
@@ -22,54 +25,77 @@ jobs:
           - 3306:3306
         options: --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=3
 
+      meilisearch:
+        image: getmeili/meilisearch:latest
+        env:
+          MEILI_MASTER_KEY: aSampleMasterKey
+        ports:
+          - 7700:7700
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.2
           extensions: mbstring, pdo, mysql
+          tools: composer:v2
 
-      - name: Set up Environment Variables
+      - name: Set bootstrap environment
         run: |
-          echo "APP_NAME=TicketFlow" >> $GITHUB_ENV
-          echo "APP_ENV=testing" >> $GITHUB_ENV
           echo "APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')" >> $GITHUB_ENV
-          echo "APP_URL=http://localhost" >> $GITHUB_ENV
-          echo "DB_CONNECTION=mysql" >> $GITHUB_ENV
-          echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV
-          echo "DB_PORT=3306" >> $GITHUB_ENV
-          echo "DB_DATABASE=test_db" >> $GITHUB_ENV
-          echo "DB_USERNAME=root" >> $GITHUB_ENV
-          echo "DB_PASSWORD=password" >> $GITHUB_ENV
-          echo "SCOUT_DRIVER=meilisearch" >> $GITHUB_ENV
-          echo "MEILISEARCH_HOST=http://localhost:7700" >> $GITHUB_ENV
-          echo "MEILISEARCH_KEY=aSampleMasterKey" >> $GITHUB_ENV
-          echo "GEMINI_API_KEY=" >> $GITHUB_ENV
-          echo "JITSI_VPAAS_MAGIC_COOKIE=" >> $GITHUB_ENV
+          echo "APP_NAME=TicketFlow" >> $GITHUB_ENV
 
-      - name: Wait for MySQL to be ready
+      - name: Set up Test Environment
         run: |
-          until mysql -h 127.0.0.1 -P 3306 -u root -ppassword -e "SHOW DATABASES"; do
-            echo "Waiting for MySQL..."
-            sleep 5
-          done
+          cat > .env << EOF
+          APP_NAME=TicketFlow
+          APP_ENV=testing
+          APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')
+          APP_URL=http://localhost
+
+          DB_CONNECTION=mysql
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_DATABASE=test_db
+          DB_USERNAME=root
+          DB_PASSWORD=password
+
+          SCOUT_DRIVER=meilisearch
+          MEILISEARCH_HOST=http://localhost:7700
+          MEILISEARCH_KEY=aSampleMasterKey
+
+          QUEUE_CONNECTION=sync
+
+          GEMINI_API_KEY=${{ secrets.TEST_GEMINI_API_KEY }}
+          JITSI_VPAAS_MAGIC_COOKIE=${{ secrets.TEST_JITSI_COOKIE }}
+          EOF
+
+
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
 
       - name: Install Dependencies
-        run: composer install --prefer-dist --no-progress
+        run: |
+          composer install --prefer-dist --no-progress
+          php artisan optimize:clear
 
       - name: Run Migrations
-        run: php artisan migrate --env=testing
+        run: php artisan migrate --env=testing --force
 
-      - name: Install and Start Meilisearch
-        run: |
-          curl -L https://install.meilisearch.com | sh
-          nohup ./meilisearch --master-key "aSampleMasterKey" > meilisearch.log 2>&1 &
-
-      - name: Scout Import for Meilisearch
+      - name: Import Search Index
         run: php artisan scout:import "App\Models\Ticket"
 
-      - name: Run Pest Tests
-        run: ./vendor/bin/pest
+      - name: Run Tests
+        run: |
+          php artisan config:clear
+          ./vendor/bin/pest
