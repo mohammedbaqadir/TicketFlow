@@ -46,34 +46,32 @@ jobs:
             cd ${{ secrets.PROD_DEPLOY_PATH }} &&
             # Put site in maintenance mode
             php artisan down &&
-
+          
             # Pull latest code
             git pull origin main &&
-
+          
             # Update environment file
-            cat > .env << "EOF"
-            APP_NAME=TicketFlow
-            APP_ENV=production
-            APP_KEY=${{ secrets.PROD_APP_KEY }}
-            APP_DEBUG=false
-            APP_URL='$PROD_APP_URL'
+            echo "APP_NAME=TicketFlow" > .env &&
+            echo "APP_ENV=production" >> .env &&
+            echo "APP_KEY=${{ secrets.PROD_APP_KEY }}" >> .env &&
+            echo "APP_DEBUG=false" >> .env &&
+            echo "APP_URL=$PROD_APP_URL" >> .env &&
+            echo "" >> .env &&
+            echo "DB_CONNECTION=mysql" >> .env &&
+            echo "DB_HOST=$PROD_DB_HOST" >> .env &&
+            echo "DB_PORT=$PROD_DB_PORT" >> .env &&
+            echo "DB_DATABASE=$PROD_DB_NAME" >> .env &&
+            echo "DB_USERNAME=$PROD_DB_USER" >> .env &&
+            echo "DB_PASSWORD=$PROD_DB_PASSWORD" >> .env &&
+            echo "" >> .env &&
+            echo "SCOUT_DRIVER=meilisearch" >> .env &&
+            echo "MEILISEARCH_HOST=$PROD_MEILISEARCH_HOST" >> .env &&
+            echo "MEILISEARCH_KEY=$PROD_MEILISEARCH_KEY" >> .env &&
+            echo "" >> .env &&
+            echo "GEMINI_API_KEY=$PROD_GEMINI_API_KEY" >> .env &&
+            echo "JITSI_VPAAS_MAGIC_COOKIE=$PROD_JITSI_COOKIE" >> .env &&  
           
-            DB_CONNECTION=mysql
-            DB_HOST='$PROD_DB_HOST'
-            DB_PORT='$PROD_DB_PORT'
-            DB_DATABASE='$PROD_DB_NAME'
-            DB_USERNAME='$PROD_DB_USER'
-            DB_PASSWORD='$PROD_DB_PASSWORD'
-          
-            SCOUT_DRIVER=meilisearch
-            MEILISEARCH_HOST='$PROD_MEILISEARCH_HOST'
-            MEILISEARCH_KEY='$PROD_MEILISEARCH_KEY'
-          
-            GEMINI_API_KEY='$PROD_GEMINI_API_KEY'
-            JITSI_VPAAS_MAGIC_COOKIE='$PROD_JITSI_COOKIE'
-            EOF
-
-            # Install/update dependencies
+          # Install/update dependencies
             composer install --no-dev --optimize-autoloader &&
             npm ci &&
             npm run build &&
