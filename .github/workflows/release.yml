@@ -59,31 +59,52 @@ jobs:
           cache: 'npm'
           cache-dependency-path: '**/package-lock.json'
 
+      - name: Verify Node.js environment
+        run: |
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo "Working directory: $(pwd)"
+
+      - name: Clear npm cache
+        run: npm cache clean --force
+
+      - name: Install dependencies with retry
+        uses: nick-invision/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 5
+          retry_on: error
+          command: |
+            npm install --save-dev \
+              semantic-release@${{ env.SEMANTIC_RELEASE_VERSION }} \
+              @semantic-release/commit-analyzer@${{ env.COMMIT_ANALYZER_VERSION }} \
+              @semantic-release/release-notes-generator@${{ env.NOTES_GENERATOR_VERSION }} \
+              @semantic-release/github@${{ env.GITHUB_PLUGIN_VERSION }} --no-optional
+
       - name: Install and verify release dependencies
         id: verify-deps
         run: |
-          # Install dependencies with exact versions
-          npm install --save-dev \
-            semantic-release@${{ env.SEMANTIC_RELEASE_VERSION }} \
-            @semantic-release/commit-analyzer@${{ env.COMMIT_ANALYZER_VERSION }} \
-            @semantic-release/release-notes-generator@${{ env.NOTES_GENERATOR_VERSION }} \
-            @semantic-release/github@${{ env.GITHUB_PLUGIN_VERSION }}
-
-          # Verify installations using require.resolve and log versions
           node -e "
+            const path = require('path');
             const packages = [
               'semantic-release',
               '@semantic-release/commit-analyzer',
               '@semantic-release/release-notes-generator',
               '@semantic-release/github'
             ];
-          
+
             packages.forEach(pkg => {
               try {
-                const version = require(pkg + '/package.json').version;
+                const pkgPath = require.resolve(pkg);
+                console.log(\`Package \${pkg} resolved to: \${pkgPath}\`);
+          
+                const pkgJsonPath = path.join(path.dirname(pkgPath), 'package.json');
+                const version = require(pkgJsonPath).version;
                 console.log(\`✓ \${pkg}@\${version} verified\`);
               } catch (e) {
-                console.error(\`Error: \${pkg} not found\`);
+                console.error(\`Error resolving \${pkg}:\`);
+                console.error(e);
                 process.exit(1);
               }
             });
@@ -103,19 +124,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: semantic-release:*
         run: |
-          # Check for existing lock
           if [ -f ".release.lock" ]; then
             echo "Error: Release lock exists. Previous release might have failed."
             exit 1
           fi
           
-          # Create lock file
           touch .release.lock
           
-          # Create temp file for output
           OUTPUT_FILE=$(mktemp)
           
-          # Perform release process
           {
             echo "Running dry-run..."
             npx semantic-release --dry-run
@@ -130,16 +147,10 @@ jobs:
             fi
           } 2>&1 | tee "$OUTPUT_FILE"
           
-          # Remove lock file
-          rm -f .release.lock
-          
-          # Process results
           if [ $RELEASE_CODE -eq 0 ]; then
-            # Log the full output for debugging
             echo "Release output:"
             cat "$OUTPUT_FILE"
 
-            # Look for version in output using more robust pattern
             VERSION=$(grep -oP "Published release \K[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+)?" "$OUTPUT_FILE" || echo "")
           
             if [ -n "$VERSION" ]; then
@@ -169,3 +180,11 @@ jobs:
               title: `🚨 Release workflow failed on ${context.sha.substring(0, 7)}`,
               body: `Release workflow failed on commit ${context.sha}. Please check the [workflow logs](${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}) for details.`
             });
+
+      - name: Final cleanup of release lock
+        if: always()
+        run: |
+          if [ -f ".release.lock" ]; then
+            echo "Removing final release lock"
+            rm -f ".release.lock"
+          fi
