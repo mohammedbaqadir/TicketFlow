@@ -43,42 +43,56 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Clean up release lock
+        if: always()
+        run: |
+          if [ -f ".release.lock" ]; then
+            echo "Removing existing release lock"
+            rm -f ".release.lock"
+          fi
+
       - name: Setup Node.js
         id: setup-node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
-      - name: Verify release dependencies
+      - name: Install and verify release dependencies
         id: verify-deps
         run: |
-          # Install dependencies
+          # Install dependencies with exact versions
           npm install --save-dev \
             semantic-release@${{ env.SEMANTIC_RELEASE_VERSION }} \
             @semantic-release/commit-analyzer@${{ env.COMMIT_ANALYZER_VERSION }} \
             @semantic-release/release-notes-generator@${{ env.NOTES_GENERATOR_VERSION }} \
             @semantic-release/github@${{ env.GITHUB_PLUGIN_VERSION }}
 
-          # Verify installations
-          REQUIRED_PACKAGES=(
-            "semantic-release@${{ env.SEMANTIC_RELEASE_VERSION }}"
-            "@semantic-release/commit-analyzer@${{ env.COMMIT_ANALYZER_VERSION }}"
-            "@semantic-release/release-notes-generator@${{ env.NOTES_GENERATOR_VERSION }}"
-            "@semantic-release/github@${{ env.GITHUB_PLUGIN_VERSION }}"
-          )
+          # Verify installations using require.resolve and log versions
+          node -e "
+            const packages = [
+              'semantic-release',
+              '@semantic-release/commit-analyzer',
+              '@semantic-release/release-notes-generator',
+              '@semantic-release/github'
+            ];
           
-          for package in "${REQUIRED_PACKAGES[@]}"; do
-            if ! npm list "$package" > /dev/null 2>&1; then
-              echo "Error: $package not installed correctly"
-              exit 1
-            fi
-          done
+            packages.forEach(pkg => {
+              try {
+                const version = require(pkg + '/package.json').version;
+                console.log(\`✓ \${pkg}@\${version} verified\`);
+              } catch (e) {
+                console.error(\`Error: \${pkg} not found\`);
+                process.exit(1);
+              }
+            });
+          "
 
       - name: Verify release configuration
         id: verify-config
         run: |
-          if [ ! -f .releaserc.json ] && [ ! -f .releaserc.js ] && [ ! -f .releaserc.yaml ]; then
+          if [ ! -f .releaserc.json ] && [ ! -f .releaserc.js ] && [ ! -f .releaserc.yaml ] && [ ! -f package.json ]; then
             echo "::error::No semantic-release configuration found"
             exit 1
           fi
@@ -121,6 +135,10 @@ jobs:
           
           # Process results
           if [ $RELEASE_CODE -eq 0 ]; then
+            # Log the full output for debugging
+            echo "Release output:"
+            cat "$OUTPUT_FILE"
+
             # Look for version in output using more robust pattern
             VERSION=$(grep -oP "Published release \K[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+)?" "$OUTPUT_FILE" || echo "")
           
