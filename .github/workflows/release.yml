@@ -3,10 +3,8 @@ name: Release
 on:
   workflow_run:
     workflows: [ "CI" ]
-    types:
-      - completed
-    branches:
-      - main
+    types: [ completed ]
+    branches: [ main ]
 
 concurrency:
   group: release-${{ github.ref }}
@@ -17,44 +15,139 @@ permissions:
   issues: write
   pull-requests: write
 
+env:
+  NODE_VERSION: "lts/*"
+  SEMANTIC_RELEASE_VERSION: "22.0.12"
+  COMMIT_ANALYZER_VERSION: "11.1.0"
+  NOTES_GENERATOR_VERSION: "12.1.0"
+  GITHUB_PLUGIN_VERSION: "9.3.0"
+
 jobs:
   release:
     name: Create Release
-    if: >
+    if: |
       github.event.workflow_run.conclusion == 'success' && 
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     outputs:
       released: ${{ steps.release.outputs.released }}
       version: ${{ steps.release.outputs.version }}
+      error: ${{ steps.release.outputs.error }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
+        id: setup-node
         uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+
+      - name: Verify release dependencies
+        id: verify-deps
+        run: |
+          # Install dependencies
+          npm install --save-dev \
+            semantic-release@${{ env.SEMANTIC_RELEASE_VERSION }} \
+            @semantic-release/commit-analyzer@${{ env.COMMIT_ANALYZER_VERSION }} \
+            @semantic-release/release-notes-generator@${{ env.NOTES_GENERATOR_VERSION }} \
+            @semantic-release/github@${{ env.GITHUB_PLUGIN_VERSION }}
+
+          # Verify installations
+          REQUIRED_PACKAGES=(
+            "semantic-release@${{ env.SEMANTIC_RELEASE_VERSION }}"
+            "@semantic-release/commit-analyzer@${{ env.COMMIT_ANALYZER_VERSION }}"
+            "@semantic-release/release-notes-generator@${{ env.NOTES_GENERATOR_VERSION }}"
+            "@semantic-release/github@${{ env.GITHUB_PLUGIN_VERSION }}"
+          )
+          
+          for package in "${REQUIRED_PACKAGES[@]}"; do
+            if ! npm list "$package" > /dev/null 2>&1; then
+              echo "Error: $package not installed correctly"
+              exit 1
+            fi
+          done
+
+      - name: Verify release configuration
+        id: verify-config
+        run: |
+          if [ ! -f .releaserc.json ] && [ ! -f .releaserc.js ] && [ ! -f .releaserc.yaml ]; then
+            echo "::error::No semantic-release configuration found"
+            exit 1
+          fi
 
       - name: Create Release
         id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: semantic-release:*
         run: |
-          npm install --save-dev semantic-release @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/github
-          RELEASE_OUTPUT=$(npx semantic-release --dry-run)
-          
-          if echo "$RELEASE_OUTPUT" | grep -q "The next release version is"; then
-            echo "NEW_VERSION=$(echo "$RELEASE_OUTPUT" | grep "The next release version is" | sed 's/.*is \(.*\)/\1/')" >> $GITHUB_ENV
-            echo "released=true" >> $GITHUB_OUTPUT
-            echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
-            npx semantic-release
-          else
-            echo "No new version to release"
-            echo "released=false" >> $GITHUB_OUTPUT
+          # Check for existing lock
+          if [ -f ".release.lock" ]; then
+            echo "Error: Release lock exists. Previous release might have failed."
+            exit 1
           fi
+          
+          # Create lock file
+          touch .release.lock
+          
+          # Create temp file for output
+          OUTPUT_FILE=$(mktemp)
+          
+          # Perform release process
+          {
+            echo "Running dry-run..."
+            npx semantic-release --dry-run
+            DRY_RUN_CODE=$?
+          
+            if [ $DRY_RUN_CODE -eq 0 ]; then
+              echo "Dry-run successful, performing release..."
+              npx semantic-release
+              RELEASE_CODE=$?
+            else
+              RELEASE_CODE=$DRY_RUN_CODE
+            fi
+          } 2>&1 | tee "$OUTPUT_FILE"
+          
+          # Remove lock file
+          rm -f .release.lock
+          
+          # Process results
+          if [ $RELEASE_CODE -eq 0 ]; then
+            # Look for version in output using more robust pattern
+            VERSION=$(grep -oP "Published release \K[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+)?" "$OUTPUT_FILE" || echo "")
+          
+            if [ -n "$VERSION" ]; then
+              echo "released=true" >> $GITHUB_OUTPUT
+              echo "version=$VERSION" >> $GITHUB_OUTPUT
+            else
+              echo "error=Version number not found in release output" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          else
+            echo "released=false" >> $GITHUB_OUTPUT
+            echo "error=Release failed with code $RELEASE_CODE" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          rm -f "$OUTPUT_FILE"
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title: `🚨 Release workflow failed on ${context.sha.substring(0, 7)}`,
+              body: `Release workflow failed on commit ${context.sha}. Please check the [workflow logs](${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}) for details.`
+            });
