@@ -7,205 +7,93 @@ on:
     branches: [ main ]
 
 concurrency:
-  # Prevents overlapping releases on the same branch by grouping under `release-<ref>`.
-  # Ensures only one release job for a specific branch (e.g., `main`) runs at a time.
   group: release-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true  # Ensure only one release job for `main` runs at a time
 
 permissions:
-  # Grants permissions required to create releases, manage issues, and interact with pull requests.
   contents: write
   issues: write
   pull-requests: write
-
-env:
-  # Specifies fixed versions for Node.js and key dependencies for release management.
-  # Locking these versions helps ensure a stable release environment.
-  NODE_VERSION: "lts/*"
-  SEMANTIC_RELEASE_VERSION: "22.0.12"
-  COMMIT_ANALYZER_VERSION: "11.1.0"
-  NOTES_GENERATOR_VERSION: "12.1.0"
-  GITHUB_PLUGIN_VERSION: "9.3.0"
 
 jobs:
   release:
     name: Create Release
 
-    # Only trigger the release if the preceding CI workflow
-    # completed successfully on the main branch.
     if: |
       github.event.workflow_run.conclusion == 'success' && 
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    outputs:
-      # Outputs indicating release status, version released, and any errors encountered.
-      released: ${{ steps.release.outputs.released }}
-      version: ${{ steps.release.outputs.version }}
-      error: ${{ steps.release.outputs.error }}
-
     steps:
-      - name: Checkout repository
-        # Checks out the repository, allowing access to the full commit history for semantic-release.
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Clean up release lock
-        # Initial cleanup step to remove any stale release lock from previous failed or canceled runs.
-        if: always()
+      # --- Pre-release Setup ---
+      - name: Confirm Required Secrets and Permissions
         run: |
-          if [ -f ".release.lock" ]; then
-            echo "Removing existing release lock"
-            rm -f ".release.lock"
+          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
+            echo "Error: GH_TOKEN is not defined. Cannot proceed with release."
+            exit 1
+          fi
+          # Test if GH_TOKEN has permissions by making a simple API call
+          if ! curl -s -f -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+               "https://api.github.com/repos/${{ github.repository }}/releases"; then
+            echo "Error: GH_TOKEN lacks necessary permissions."
+            exit 1
           fi
 
+      # --- Environment Configuration ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history required for accurate changelog generation
+          persist-credentials: false
+
       - name: Setup Node.js
-        id: setup-node
-        # Configures the Node.js environment with the specified version, enabling dependency installation.
-        # Uses caching to speed up repeated installations of npm dependencies.
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
+          node-version: "lts/*"
+          cache: "npm"
 
       - name: Verify Node.js environment
-        # Logs Node.js and npm versions as an environment verification step.
-        # Useful for debugging any environment-specific issues.
         run: |
           echo "Node version: $(node -v)"
           echo "NPM version: $(npm -v)"
           echo "Working directory: $(pwd)"
 
-      - name: Clear npm cache (optional, remove if unnecessary)
-        # Optional safeguard to clear the npm cache, which can prevent issues caused by stale or corrupted cache data.
-        # This step can be removed if it’s determined unnecessary for this project.
-        run: npm cache clean --force
-
-      - name: Install dependencies with retry
-        # Installs specific versions of release-related dependencies.
-        # Uses retry logic to handle transient network errors and ensure reliable installation.
-        uses: nick-invision/retry@v3
-        with:
-          timeout_minutes: 5                   # Each attempt times out after 5 minutes.
-          max_attempts: 3                       # Maximum of 3 attempts for installation.
-          retry_wait_seconds: 5                 # Waits 5 seconds between retries.
-          retry_on: error                       # Retries only when an error occurs.
-          command: |
-            npm install --save-dev \
-              semantic-release@${{ env.SEMANTIC_RELEASE_VERSION }} \
-              @semantic-release/commit-analyzer@${{ env.COMMIT_ANALYZER_VERSION }} \
-              @semantic-release/release-notes-generator@${{ env.NOTES_GENERATOR_VERSION }} \
-              @semantic-release/github@${{ env.GITHUB_PLUGIN_VERSION }} --no-optional
-
-      - name: Install and verify release dependencies
-        id: verify-deps
-        # Validates that all required dependencies are installed and available.
-        # Uses require.resolve to confirm the path and version of each package, ensuring that scoped packages are resolved reliably.
+      # --- Conditional Release Check ---
+      - name: Check for Release Necessity
+        id: check
         run: |
-          node -e "
-            const path = require('path');
-            const packages = [
-              'semantic-release',
-              '@semantic-release/commit-analyzer',
-              '@semantic-release/release-notes-generator',
-              '@semantic-release/github'
-            ];
-
-            packages.forEach(pkg => {
-              try {
-                const pkgPath = require.resolve(pkg);
-                console.log(\`Package \${pkg} resolved to: \${pkgPath}\`);
-          
-                const pkgJsonPath = path.join(path.dirname(pkgPath), 'package.json');
-                const version = require(pkgJsonPath).version;
-                console.log(\`✓ \${pkg}@\${version} verified\`);
-              } catch (e) {
-                console.error(\`Error resolving \${pkg}:\`);
-                console.error(e);
-                process.exit(1);
-              }
-            });
-          "
-
-      - name: Verify release configuration
-        id: verify-config
-        # Checks for the presence of a semantic-release configuration file in the repository.
-        # Errors if no configuration file is found, as it’s required for release logic.
-        run: |
-          if [ ! -f .releaserc.json ] && [ ! -f .releaserc.js ] && [ ! -f .releaserc.yaml ] && [ ! -f package.json ]; then
-            echo "::error::No semantic-release configuration found"
-            exit 1
-          fi
-
-      - name: Create Release
-        id: release
-        env:
-          # Uses GitHub token for release authorization.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEBUG: semantic-release:*    # Enables debug logging for semantic-release for detailed output.
-        run: |
-          # Prevents overlapping releases by checking for an existing `.release.lock` file.
-          if [ -f ".release.lock" ]; then
-            echo "Error: Release lock exists. Previous release might have failed."
-            exit 1
-          fi
-          
-          # Create a lock file to indicate an in-progress release.
-          touch .release.lock
-          
-          # Create a temporary file to store release command output for further processing.
-          OUTPUT_FILE=$(mktemp)
-          
-          # Executes a dry-run of semantic-release to simulate the release and verify configuration.
-          # If successful, proceeds to perform the actual release.
-          {
-            echo "Running dry-run..."
-            npx semantic-release --dry-run
-            DRY_RUN_CODE=$?
-          
-            if [ $DRY_RUN_CODE -eq 0 ]; then
-              echo "Dry-run successful, performing release..."
-              npx semantic-release
-              RELEASE_CODE=$?
-            else
-              RELEASE_CODE=$DRY_RUN_CODE
-            fi
-          } 2>&1 | tee "$OUTPUT_FILE"
-          
-          # Parses the output to detect the published version or any release errors.
-          if [ $RELEASE_CODE -eq 0 ]; then
-            echo "Release output:"
-            cat "$OUTPUT_FILE"
-
-            # Extracts the version number from the output using a regex pattern.
-            VERSION=$(grep -oP "Published release \K[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+)?" "$OUTPUT_FILE" || echo "")
-          
-            # Sets output values for `released` and `version` if release was successful.
-            if [ -n "$VERSION" ]; then
-              echo "released=true" >> $GITHUB_OUTPUT
-              echo "version=$VERSION" >> $GITHUB_OUTPUT
-            else
-              echo "error=Version number not found in release output" >> $GITHUB_OUTPUT
-              exit 1
-            fi
+          LAST_RELEASE=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+          CHANGES=$(git log --oneline $LAST_RELEASE..HEAD)
+          if [ -z "$CHANGES" ]; then
+            echo "No changes since last release"
+            echo "skip_release=true" >> $GITHUB_OUTPUT
           else
-            # Sets output to indicate failure if the release command did not complete successfully.
-            echo "released=false" >> $GITHUB_OUTPUT
-            echo "error=Release failed with code $RELEASE_CODE" >> $GITHUB_OUTPUT
-            exit 1
+            echo "skip_release=false" >> $GITHUB_OUTPUT
           fi
-          
-          # Cleans up temporary output file after processing.
-          rm -f "$OUTPUT_FILE"
 
+      # --- Release Process ---
+      - name: Semantic Release
+        if: steps.check.outputs.skip_release == 'false'
+        id: release
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          retries: 2  # Retry to handle transient failures within action
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      # --- Post-release Tasks ---
+      - name: Capture Release Outputs
+        if: steps.release.outputs.new_release_published == 'true'
+        run: |
+          echo "New release published: Version ${{ steps.release.outputs.new_release_version }}"
+          echo "Major version: ${{ steps.release.outputs.new_release_major_version }}"
+          echo "Minor version: ${{ steps.release.outputs.new_release_minor_version }}"
+          echo "Patch version: ${{ steps.release.outputs.new_release_patch_version }}"
+
+      # --- Error Handling ---
       - name: Notify on failure
         if: failure()
-        # If the release workflow fails, this step creates a GitHub issue to notify maintainers.
-        # Includes workflow run details and links to logs for debugging.
         uses: actions/github-script@v7
         with:
           script: |
@@ -217,12 +105,7 @@ jobs:
               body: `Release workflow failed on commit ${context.sha}. Please check the [workflow logs](${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}) for details.`
             });
 
-      - name: Final cleanup of release lock
+      # --- Final Cleanup ---
+      - name: Final cleanup
         if: always()
-        # Final cleanup step that always runs, ensuring the `.release.lock` file is removed.
-        # Prevents blocking of future release workflows due to stale lock files.
-        run: |
-          if [ -f ".release.lock" ]; then
-            echo "Removing final release lock"
-            rm -f ".release.lock"
-          fi
+        run: echo "Final cleanup complete"
