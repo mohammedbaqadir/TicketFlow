@@ -8,12 +8,13 @@ on:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: true  # Ensure only one release job for `main` runs at a time
+  cancel-in-progress: true
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
+  metadata: read
 
 jobs:
   release:
@@ -23,7 +24,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success' && 
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20  # Increased from 15 for longer processes
 
     steps:
       # --- Pre-release Setup ---
@@ -39,18 +40,21 @@ jobs:
             echo "Error: GH_TOKEN lacks necessary permissions."
             exit 1
           fi
+          # Log GitHub user tied to GH_TOKEN for verification
+          curl -s -f -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+               "https://api.github.com/user" | jq '.login'
 
       # --- Environment Configuration ---
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history required for accurate changelog generation
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: "18.x"  # Changed to a specific LTS version
           cache: "npm"
 
       - name: Verify Node.js environment
@@ -63,13 +67,19 @@ jobs:
       - name: Check for Release Necessity
         id: check
         run: |
-          LAST_RELEASE=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
-          CHANGES=$(git log --oneline $LAST_RELEASE..HEAD)
-          if [ -z "$CHANGES" ]; then
-            echo "No changes since last release"
+          LAST_RELEASE=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_RELEASE" ]; then
+            echo "No previous releases found. Skipping release."
             echo "skip_release=true" >> $GITHUB_OUTPUT
           else
-            echo "skip_release=false" >> $GITHUB_OUTPUT
+            CHANGES=$(git log --oneline $LAST_RELEASE..HEAD)
+            if [ -z "$CHANGES" ]; then
+              echo "No changes since last release."
+              echo "skip_release=true" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected."
+              echo "skip_release=false" >> $GITHUB_OUTPUT
+            fi
           fi
 
       # --- Release Process ---
@@ -78,7 +88,7 @@ jobs:
         id: release
         uses: cycjimmy/semantic-release-action@v4
         with:
-          retries: 2  # Retry to handle transient failures within action
+          retries: 2
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
