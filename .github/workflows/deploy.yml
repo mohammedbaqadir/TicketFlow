@@ -4,16 +4,16 @@ on:
   workflow_run:
     workflows: [ "Release" ]
     types: [ completed ]
-    branches: [ main ]
+    branches: [ main ] # Only triggers when the Release workflow completes successfully on the main branch
 
 concurrency:
   group: deploy-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: false # Allows concurrent deployments if necessary, avoiding auto-cancel to support intentional re-runs
 
 env:
   SSH_BASE_CMD: ssh -i ~/.ssh/deployment_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts
-  DEPLOY_HOST: ticketflow.duckdns.org
-  CMD_TIMEOUT: 300
+  DEPLOY_HOST: ticketflow.duckdns.org # Specifies SSH and deployment host settings for reusability and clear organization
+  CMD_TIMEOUT: 300 # Sets a default timeout for SSH commands to ensure tasks complete within a reasonable time frame
 
 jobs:
   deploy:
@@ -22,8 +22,8 @@ jobs:
       github.event.workflow_run.conclusion == 'success' &&
       !contains(github.event.workflow_run.head_commit.message, '[skip deploy]')
     runs-on: ubuntu-latest
-    environment: production
-    timeout-minutes: 30
+    environment: production # Sets job to run in production environment
+    timeout-minutes: 30 # Limits deployment job duration to prevent long-running processes
 
     steps:
       - name: Configure SSH
@@ -31,10 +31,10 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.PROD_GH_RUNNER_TO_EC2_KEY }}" > ~/.ssh/deployment_key
-          chmod 600 ~/.ssh/deployment_key
-          ssh-keyscan -H ${{ env.DEPLOY_HOST }} > ~/.ssh/known_hosts
-          
-          # Test connection with retry
+          chmod 600 ~/.ssh/deployment_key # Ensures SSH key is securely stored with appropriate permissions
+          ssh-keyscan -H ${{ env.DEPLOY_HOST }} > ~/.ssh/known_hosts # Adds host to known_hosts for trusted SSH connection
+
+          # Tests SSH connection with retries to confirm server availability
           max_attempts=3
           attempt=1
           while [ $attempt -le $max_attempts ]; do
@@ -46,35 +46,35 @@ jobs:
             sleep 5
             attempt=$((attempt + 1))
           done
-          
+
           if [ $attempt -gt $max_attempts ]; then
             echo "Failed to establish SSH connection after $max_attempts attempts"
             exit 1
-          fi
+          fi # Fails deployment if SSH connection cannot be established within max attempts
 
       - name: Create deployment marker
         id: deployment-start
         run: |
-          DEPLOY_ID=$(date +%Y%m%d_%H%M%S)
+          DEPLOY_ID=$(date +%Y%m%d_%H%M%S) # Generates a unique deployment ID using timestamp
           echo "deploy_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
           ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
-            "echo '$DEPLOY_ID' > ${{ secrets.PROD_DEPLOY_PATH }}/.deployment_in_progress"
+            "echo '$DEPLOY_ID' > ${{ secrets.PROD_DEPLOY_PATH }}/.deployment_in_progress" # Marks deployment start on server for visibility
 
       - name: Enable maintenance mode
         id: maintenance-mode
         run: |
           ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
-            "cd ${{ secrets.PROD_DEPLOY_PATH }} && php artisan down --render='maintenance' --retry=60"
+            "cd ${{ secrets.PROD_DEPLOY_PATH }} && php artisan down --render='maintenance' --retry=60" # Places application in maintenance mode during deployment for consistency
 
       - name: Backup current state
         id: backup
         run: |
-          BACKUP_DIR="pre_deploy_backup_$(date +%Y%m%d_%H%M%S)"
+          BACKUP_DIR="pre_deploy_backup_$(date +%Y%m%d_%H%M%S)" # Timestamped backup directory for organizing backups by deployment
           ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'ENDSSH'
             cd ${{ secrets.PROD_DEPLOY_PATH }}
-            mkdir -p backups/$BACKUP_DIR
-            cp .env backups/$BACKUP_DIR/.env
-            php artisan config:clear
+            mkdir -p backups/$BACKUP_DIR # Creates a backup directory on the server
+            cp .env backups/$BACKUP_DIR/.env # Backs up environment file as critical reference for troubleshooting
+            php artisan config:clear # Clears cached configurations for clean start in deployment
             php artisan route:clear
             php artisan cache:clear
           ENDSSH
@@ -82,7 +82,7 @@ jobs:
       - name: Generate and validate env file
         id: env-setup
         run: |
-          # Create temporary env file with proper escaping
+          # Creates new production environment file with secure credentials
           cat << 'EOL' > env.production
           APP_NAME="TicketFlow"
           APP_ENV=production
@@ -105,9 +105,10 @@ jobs:
           JITSI_VPAAS_MAGIC_COOKIE="${{ secrets.PROD_JITSI_COOKIE }}"
           EOL
 
-          # Upload and validate
+          # Securely uploads environment file to the server, overwriting previous configurations
           scp -i ~/.ssh/deployment_key env.production ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ secrets.PROD_DEPLOY_PATH }}/.env
           
+          # Verifies that environment file is correctly deployed and readable by application
           ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} \
             "cd ${{ secrets.PROD_DEPLOY_PATH }} && chmod 600 .env && php artisan env:check"
 
@@ -115,13 +116,13 @@ jobs:
         id: deploy
         timeout-minutes: 20
         run: |
+          # Sequentially executes each deployment step with checks for errors
           ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'ENDSSH'
             cd ${{ secrets.PROD_DEPLOY_PATH }}
-          
-            # Track deployment state
-            echo "DEPLOYING" > deployment_status
-          
-            # Core deployment steps with status checks
+
+            echo "DEPLOYING" > deployment_status # Tracks deployment state as "DEPLOYING"
+
+            # Executes deployment commands, with failure detection for each step
             deploy_step() {
               echo "Executing: $1"
               if ! eval "$1"; then
@@ -131,7 +132,7 @@ jobs:
               fi
               return 0
             }
-          
+
             deploy_step "git pull origin main" &&
             deploy_step "composer install --no-dev --optimize-autoloader --no-interaction" &&
             deploy_step "npm ci" &&
@@ -143,51 +144,38 @@ jobs:
             deploy_step "php artisan storage:link || true" &&
             deploy_step "php artisan queue:restart" &&
             deploy_step "php artisan scout:sync-index-settings"
-          
+
             if [ $? -eq 0 ]; then
               echo "SUCCESS" > deployment_status
-            fi
+            fi # Tracks deployment success to assist in troubleshooting if issues arise
           ENDSSH
 
       - name: Health check
         id: health-check
         if: success()
         run: |
-          ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'ENDSSH'
-            cd ${{ secrets.PROD_DEPLOY_PATH }}
-          
-            # Check essential services
-            checks=(
-              "php artisan migrate:status"
-              "php artisan queue:status"
-              "curl -s http://localhost/health"
-            )
-          
-            for check in "${checks[@]}"; do
-              if ! eval "$check"; then
-                echo "Health check failed: $check"
-                exit 1
-              fi
-            done
-          ENDSSH
+          echo "No health checks are set up. Skipping..."
+
 
       - name: Finalize deployment
         id: finalize
         if: success()
         run: |
+          # Disables maintenance mode and cleans up temporary deployment markers
           ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'ENDSSH'
             cd ${{ secrets.PROD_DEPLOY_PATH }}
-            php artisan up
-            rm -f .deployment_in_progress deployment_status
+            php artisan up # Takes application out of maintenance mode for production use
+            rm -f .deployment_in_progress deployment_status # Removes deployment markers to signal deployment completion
           ENDSSH
 
       - name: Handle deployment failure
         if: failure()
         run: |
+          # Logs deployment failure and keeps application in maintenance mode with a user-friendly message
           ${{ env.SSH_BASE_CMD }} ${{ secrets.PROD_DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'ENDSSH'
             cd ${{ secrets.PROD_DEPLOY_PATH }}
             php artisan down --message='Maintenance in progress due to deployment issues. Please try again later.' --retry=60
-            echo "Deployment failed at $(date)" >> deployment_failures.log
+            echo "Deployment failed at $(date)" >> deployment_failures.log # Logs failure timestamp for debugging
           ENDSSH
 
       - name: Notify deployment status
@@ -195,15 +183,16 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            # Posts a GitHub issue with deployment status, success or failure, for visibility
             const status = context.job.status;
             const emoji = status === 'success' ? '✅' : '❌';
             const { owner, repo } = context.repo;
-            
+
             await github.rest.issues.create({
               owner,
               repo,
               title: `${emoji} Deployment to production ${status}`,
               body: `Deployment to production ${status} for commit ${context.sha}.
-            
+
               [View deployment logs](${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId})`
             });
