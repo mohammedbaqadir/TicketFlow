@@ -30,8 +30,10 @@ env:
 jobs:
   release:
     name: Create Release
+
+    # Only trigger the release if the preceding CI workflow
+    # completed successfully on the main branch.
     if: |
-      # Only trigger the release if the preceding CI workflow completed successfully on the main branch.
       github.event.workflow_run.conclusion == 'success' && 
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
