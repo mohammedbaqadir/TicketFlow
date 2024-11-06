@@ -2,9 +2,9 @@ name: Release
 
 on:
   workflow_run:
-    workflows: [ "CI" ]
-    types: [ completed ]
-    branches: [ main ]
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
 
 concurrency:
   group: release-${{ github.ref }}
@@ -14,7 +14,6 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
-  metadata: read
 
 jobs:
   release:
@@ -24,7 +23,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success' && 
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20  # Increased from 15 for longer processes
+    timeout-minutes: 20
 
     steps:
       # --- Pre-release Setup ---
@@ -40,9 +39,6 @@ jobs:
             echo "Error: GH_TOKEN lacks necessary permissions."
             exit 1
           fi
-          # Log GitHub user tied to GH_TOKEN for verification
-          curl -s -f -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-               "https://api.github.com/user" | jq '.login'
 
       # --- Environment Configuration ---
       - name: Checkout repository
@@ -54,14 +50,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18.x"  # Changed to a specific LTS version
+          node-version: "18.x"
           cache: "npm"
-
-      - name: Verify Node.js environment
-        run: |
-          echo "Node version: $(node -v)"
-          echo "NPM version: $(npm -v)"
-          echo "Working directory: $(pwd)"
 
       # --- Conditional Release Check ---
       - name: Check for Release Necessity
