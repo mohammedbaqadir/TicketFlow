@@ -1,30 +1,29 @@
-# Triggers after successful CI run on main branch - ensures releases only happen after all tests pass
-name: Release
+name: Release Preview
 
 on:
   workflow_run:
     workflows: [ "CI" ]
     types: [ completed ]
-    branches: [ main ]
+    branches-ignore: [ main ]  # This makes it run on all branches EXCEPT main
 
-# Prevents concurrent releases and cancels redundant runs
+# Prevents concurrent previews and cancels redundant runs
 concurrency:
-  group: release-${{ github.ref }}-${{ github.sha }}
+  group: release-preview-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
-# Required permissions for creating releases and updating issues/PRs
+# Read-only permissions since this is just a preview
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
+  issues: read
+  pull-requests: write  # Needed to comment on PR
 
 jobs:
-  release:
-    # Only proceed if the triggering CI workflow succeeded and was triggered by a push
+  release-preview:
+    # Only proceed if the triggering CI workflow succeeded and was triggered by a PR
     if: |
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push'
-    name: Release
+      github.event.workflow_run.event == 'pull_request'
+    name: Release Preview
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -44,9 +43,7 @@ jobs:
       - name: Install Semantic Release
         run: npm install -D semantic-release@24.2.0
 
-      # Generates semantic-release config with conventional commit parsing and customized release rules
-      # Each commit type maps to a specific release type (major/minor/patch) or no release
-      # Also configures how release notes are generated and how GitHub releases/issues are handled
+      # Uses the exact same config as the real release workflow
       - name: Create Release Config
         run: |
           cat > .releaserc.json << EOF
@@ -124,19 +121,20 @@ jobs:
                 }
               ],
               ["@semantic-release/github", {
-                "successComment": ":tada: This issue has been resolved in version \${nextRelease.version} :tada:\n\nThe release is available on [GitHub release](\${releases[0].url})",
-                "failComment": ":rotating_light: This release failed due to the following errors:\n\n\${errors.map(error => error.message).join('\n')}",
-                "failTitle": "🚨 Automated Release Failed",
-                "labels": ["released"],
-                "releasedLabels": ["released"]
+                "successComment": "🔍 **Release Preview**\n\nWhen merged, this PR will create version \${nextRelease.version} with the following release notes:\n\n\${nextRelease.notes}",
+                "failComment": "⚠️ Release preview failed due to the following errors:\n\n\${errors.map(error => error.message).join('\\n')}",
+                "failTitle": "Release Preview Failed",
+                "labels": ["has-release-preview"],
+                "releasedLabels": ["has-release-preview"]
               }]
             ]
           }
           EOF
 
-      # Executes semantic-release with the generated config
-      # Analyzes commits, determines version bump, generates release notes, and creates GitHub release
-      - name: Run Semantic Release
+      # Runs semantic-release in dry-run mode and captures output
+      - name: Run Release Preview
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: npx semantic-release
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Run in dry-run mode and capture output
+          npx semantic-release --dry-run
