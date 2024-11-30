@@ -17,29 +17,32 @@ export default {
       'security', // Security improvements
     ]],
     'scope-enum': [2, 'always', [
-      // Scopes (WHAT is being changed)
-      // Core
-      'core',    // Core application logic
-      'deps',   // Dependencies
-      'config', // Configuration files
+      // Application Logic
+      'action',      // Single-purpose business logic actions/operations
+      'policy',      // Authorization and access control
+      'event',       // Event handling and listeners
+      'job',         // Background/queued jobs
 
-      // Security & Auth
-      'auth',   // Authentication/Authorization
+      // Data Layer
+      'model',       // Eloquent models, relationships, scopes
+      'migration',   // Database structure changes
+      'seed',        // Database seeding and factories
 
-      // Application Layers
-      'api',  // API related changes
-      'ui',   // User interface
-      'db',   // Database
+      // Interface Layer
+      'api',         // API endpoints, resources, transformers
+      'console',     // CLI commands and features
+
+      // Presentation
+      'view',        // Templates, components, frontend assets
 
       // Infrastructure
-      'infra',  // Infrastructure related changes
-      'deploy', // Deployment specific changes
+      'auth',        // Authentication mechanisms
+      'cache',       // Caching configurations and strategies
+      'config',      // Application configuration
+      'integration',  // Third-party service integrations
 
       // Documentation
-      'docs',  // Documentation
-
-      // Testing
-      'test',    // Test infrastructure
+      'readme'
     ]],
     'scope-case': [2, 'always', 'lowercase'],
     'scope-empty': [2, 'never'],
@@ -51,6 +54,6 @@ export default {
     'body-max-line-length': [2, 'always', 72],
     'body-leading-blank': [2, 'always'],
     'footer-leading-blank': [2, 'always'],
-
+    'footer-max-line-length': [2, 'always', 100],
   }
 };
