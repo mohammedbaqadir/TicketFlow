@@ -2,103 +2,138 @@ name: CI
 
 on:
   push:
-    branches: [ main ] # Trigger CI on push events to main branch
+    branches: [ main ]
+    paths:
+      - 'database/migrations/**'
+      - '**.php'
+      - 'composer.lock'
   pull_request:
-    branches: [ main ] # Also triggers on pull requests targeting main branch
+    branches: [ main ]
+    paths:
+      - 'database/migrations/**'
+      - '**.php'
+      - 'composer.lock'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true # Ensures only the latest workflow run proceeds; cancels previous runs for same PR or branch to avoid redundant executions
+  group: ci-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: true
 
 jobs:
+  verify-secrets:
+    name: Verify Required Secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      secrets_valid: ${{ steps.validate-secrets.outputs.secrets_valid }}
+    steps:
+      - id: validate-secrets
+        name: Validate Secrets
+        run: |
+          required_secrets=("GEMINI_API_KEY" "JITSI_VPAAS_MAGIC_COOKIE")
+          missing_secrets=()
+          
+          for secret in "${required_secrets[@]}"; do
+            if [ -z "${{ secrets[secret] }}" ]; then
+              missing_secrets+=("$secret")
+            fi
+          done
+          
+          if [ ${#missing_secrets[@]} -eq 0 ]; then
+            echo "All required secrets are present"
+            echo "secrets_valid=true" >> $GITHUB_OUTPUT
+          else
+            echo "::error::Missing required secrets: ${missing_secrets[*]}"
+            exit 1
+          fi
+
   test:
     name: Test Suite
-    runs-on: ubuntu-latest # Specifies the environment for running tests on the latest Ubuntu version
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: verify-secrets
+    if: needs.verify-secrets.outputs.secrets_valid == 'true'
+    env:
+      APP_KEY: base64:$(php -r 'echo base64_encode(random_bytes(32));')
+      APP_NAME: TicketFlow
+      APP_ENV: testing
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: test_db
+      DB_USERNAME: test_user
+      DB_PASSWORD: test_password
+      MEILISEARCH_HOST: http://localhost:7700
+      MEILISEARCH_KEY: aSampleMasterKey
 
     services:
-      # Sets up MySQL service with health checks to ensure availability for testing
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: password # Sets root password for MySQL service
-          MYSQL_DATABASE: test_db # Creates a test database named test_db
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
         ports:
-          - 3306:3306 # Exposes MySQL on default port 3306
-        options: --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=3 # Ensures MySQL readiness with retries if health checks initially fail
+          - 3306:3306
+        options: >
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=10s
+          --health-retries=5
 
-      # Sets up MeiliSearch for testing with master key for search indexing tests
       meilisearch:
-        image: getmeili/meilisearch:latest
+        image: getmeili/meilisearch:v1.11.1
         env:
-          MEILI_MASTER_KEY: aSampleMasterKey # Sets master key for secure access in testing
+          MEILI_MASTER_KEY: aSampleMasterKey
         ports:
-          - 7700:7700 # Exposes MeiliSearch on port 7700 for application search testing
+          - 7700:7700
+        options: >
+          --health-cmd="curl -f http://localhost:7700/health || exit 1"
+          --health-interval=10s
+          --health-timeout=10s
+          --health-retries=5
 
     steps:
-      - uses: actions/checkout@v4 # Checks out the repository code
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2 # Installs PHP 8.2 for compatibility with project
-          extensions: mbstring, pdo, mysql # Adds necessary extensions for application functionality and testing
-          tools: composer:v2 # Ensures Composer version 2 for dependency management
+          php-version: 8.2
+          extensions: mbstring, pdo, mysql
 
-      - name: Set bootstrap environment
-        run: |
-          echo "APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')" >> $GITHUB_ENV
-          echo "APP_NAME=TicketFlow" >> $GITHUB_ENV # Exports key application environment variables for runtime setup
-
-      - name: Set up Test Environment
-        run: |
-          # Generates a `.env` file tailored for testing environment
-          cat > .env << EOF
-          APP_NAME=TicketFlow
-          APP_ENV=testing
-          APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')
-          APP_URL=http://localhost
-
-          DB_CONNECTION=mysql
-          DB_HOST=127.0.0.1
-          DB_PORT=3306
-          DB_DATABASE=test_db
-          DB_USERNAME=root
-          DB_PASSWORD=password
-
-          SCOUT_DRIVER=meilisearch
-          MEILISEARCH_HOST=http://localhost:7700
-          MEILISEARCH_KEY=aSampleMasterKey
-
-          QUEUE_CONNECTION=sync
-
-          GEMINI_API_KEY=${{ secrets.TEST_GEMINI_API_KEY }}
-          JITSI_VPAAS_MAGIC_COOKIE=${{ secrets.TEST_JITSI_COOKIE }}
-          EOF
-          # Defines environment variables necessary for testing, including credentials and external service access keys using GitHub Secrets for secure access
-
-      - name: Get composer cache directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT # Fetches Composer cache directory to enable dependency caching and speed up builds
-
-      - name: Cache composer dependencies
+      - name: Cache Composer Dependencies
         uses: actions/cache@v4
         with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer- # Caches dependencies to reduce installation time, restoring from closest match if cache is not exact
+          path: vendor
+          key: ${{ runner.os }}-php-8.2-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.2-
 
-      - name: Install Dependencies
+      - name: Install Composer Dependencies
         run: |
-          composer install --prefer-dist --no-progress # Installs PHP dependencies from composer.json, optimizing for CI environment
-          php artisan optimize:clear # Clears any cached files (route, config, etc.) to ensure fresh environment setup
+          echo "Installing Composer dependencies..."
+          if ! composer install --prefer-dist --no-progress; then
+            echo "::error::Composer installation failed! Check composer.lock for conflicts."
+            exit 1
+          fi
+          echo "Composer dependencies installed successfully."
 
-      - name: Run Migrations
-        run: php artisan migrate --env=testing --force # Runs migrations on test database, using forced mode for non-interactive environments like CI
-
-      - name: Import Search Index
-        run: php artisan scout:import "App\Models\Ticket" # Populates MeiliSearch index with sample data from Ticket model for test cases that involve search
-
-      - name: Run Tests
+      - name: Run Database Migrations
         run: |
-          php artisan config:clear # Ensures configuration is not cached before tests to reflect the latest settings
-          ./vendor/bin/pest # Executes tests using Pest framework with detailed output for diagnostics if any tests fail
+          echo "Running database migrations..."
+          if ! php artisan migrate:fresh --env=testing --force; then
+            echo "::error::Database migrations failed! Check migration files and database connection."
+            exit 1
+          fi
+          echo "Database migrations completed successfully."
+
+      - name: Run Test Suite
+        run: |
+          echo "Running test suite..."
+          if ! ./vendor/bin/pest --verbose; then
+            echo "::error::Test suite failed! Check test output above for specific failures."
+            exit 1
+          fi
+          echo "Test suite completed successfully."
