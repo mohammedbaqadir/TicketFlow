@@ -4,7 +4,6 @@ on:
   workflow_run:
     workflows: [ "CI" ]
     types: [ completed ]
-    branches-ignore: [ main ]  # This makes it run on all branches EXCEPT main
 
 # Prevents concurrent previews and cancels redundant runs
 concurrency:
