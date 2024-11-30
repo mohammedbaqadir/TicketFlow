@@ -3,10 +3,8 @@ name: Deploy to Production
 on:
   workflow_run:
     workflows: [ "Release" ]
-    types:
-      - completed
-    branches:
-      - main
+    types: [ completed ]
+
 
 jobs:
   pre-deployment-checks:
