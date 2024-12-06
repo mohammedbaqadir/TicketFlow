@@ -38,21 +38,6 @@
                     return $this->with( 'toast', compact( 'message', 'description', 'type', 'position', 'html' ) );
                 } );
 
-            if ( App::environment( 'production' ) ) {
-                $user = User::firstOrCreate(
-                    [ 'email' => 'deploy@ticketflow.local' ],
-                    [
-                        'name' => 'Deployment Bot',
-                        'password' => Hash::make( Str::random( 64 ) )
-                    ]
-                );
-
-                // Create token if doesn't exist
-                if ( !$user->tokens()->where( 'name', 'opcache-reset' )->exists() ) {
-                    $token = $user->createToken( 'opcache-reset', [ 'opcache:reset' ] );
-                    Log::info( 'New deployment token created: ' . $token->plainTextToken );
-                }
-            }
         }
 
         /**
@@ -115,18 +100,5 @@
             } );
         }
 
-        private function setOpcacheResetRateLimit() : void
-        {
-            RateLimiter::for( 'opcache-reset', function ( Request $request ) {
-                return [
-                    Limit::perMinute( 3 )
-                        ->by( 'opcache:deployment' )
-                        ->response( function ( Request $request, array $headers ) {
-                            return response()->json( [
-                                'message' => 'Too many cache reset attempts.'
-                            ], 429, $headers );
-                        } ),
-                ];
-            } );
-        }
+
     }

@@ -10,7 +10,6 @@
   "require": {
     "php": "^8.2",
     "ext-pdo": "*",
-    "ext-zend-opcache": "*",
     "filament/filament": "^3.2",
     "filament/notifications": "^3.2",
     "filament/spatie-laravel-media-library-plugin": "^3.2",
@@ -19,7 +18,6 @@
     "gemini-api-php/laravel": "^0.3.0",
     "http-interop/http-factory-guzzle": "^1.2",
     "laravel/framework": "^11.9",
-    "laravel/sanctum": "^4.0",
     "laravel/scout": "^10.10",
     "laravel/tinker": "^2.9",
     "livewire/livewire": "^3.5",
