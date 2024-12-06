@@ -7,7 +7,6 @@
     use Illuminate\Database\Eloquent\Relations\HasMany;
     use Illuminate\Database\Eloquent\SoftDeletes;
     use Illuminate\Foundation\Auth\User as Authenticatable;
-    use Laravel\Sanctum\HasApiTokens;
     use Spatie\MediaLibrary\HasMedia;
     use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -16,7 +15,6 @@
         use InteractsWithMedia;
         use SoftDeletes;
         use HasFactory;
-        use HasApiTokens;
 
         protected $fillable = [
             'name', 'email', 'password', 'role', 'preferences', 'is_locked', 'lockout_time', 'lockout_count'
