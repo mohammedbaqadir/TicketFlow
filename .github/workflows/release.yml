@@ -65,19 +65,18 @@ jobs:
                     "breakingHeaderPattern": "^(\\w*)(?:\\(([-\\w\\$\\.\\-\\* ]*)\\))?!: (.*)$"
                   },
                   "releaseRules": [
-                    { "breaking": true, "release": "major" },
-                    { "type": "feat", "release": "minor" },
-                    { "type": "fix", "release": "patch" },
-                    { "type": "perf", "release": "patch" },
-                    { "type": "security", "release": "patch" },
-                    { "type": "docs", "scope": "README", "release": "patch" },
-                    { "type": "docs", "scope": "api", "release": "patch" },
-                    { "type": "refactor", "release": "patch" },
-                    { "type": "style", "release": "patch" },
-                    { "type": "build", "scope": "deps", "release": "patch" },
-                    { "type": "test", "release": false },
-                    { "type": "ci", "release": false },
-                    { "type": "chore", "release": false }
+                    { "breaking": true, "release": "major" },                       // Breaking changes trigger major version
+                    { "type": "feat", "release": "minor" },                        // New features trigger minor version
+                    { "type": "fix", "release": "patch" },                         // Bug fixes trigger patch version
+                    { "type": "perf", "release": "patch" },                        // Performance improvements trigger patch
+                    { "type": "security", "release": "patch" },                    // Security fixes trigger patch
+                    { "type": "docs", "release": "patch" },                        // All documentation updates trigger patch
+                    { "type": "refactor", "release": "patch" },                    // Refactors trigger patch
+                    { "type": "style", "release": "patch" },                       // Code style changes trigger patch
+                    { "type": "build", "release": "patch" },                       // Build system updates trigger patch
+                    { "type": "ci", "release": false },                            // CI updates excluded from versioning
+                    { "type": "chore", "release": false },                         // Chore updates excluded from versioning
+                    { "type": "test", "release": false }                           // Test changes excluded from versioning
                   ]
                 }
               ],

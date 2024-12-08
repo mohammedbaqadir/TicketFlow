@@ -25,6 +25,9 @@ jobs:
     timeout-minutes: 5
     outputs:
       secrets_valid: ${{ steps.validate-secrets.outputs.secrets_valid }}
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      JITSI_VPAAS_MAGIC_COOKIE: ${{ secrets.JITSI_VPAAS_MAGIC_COOKIE }}
     steps:
       - id: validate-secrets
         name: Validate Secrets
@@ -33,7 +36,7 @@ jobs:
           missing_secrets=()
           
           for secret in "${required_secrets[@]}"; do
-            if [ -z "${{ secrets[secret] }}" ]; then
+            if [ -z "${!secret}" ]; then
               missing_secrets+=("$secret")
             fi
           done
@@ -52,19 +55,6 @@ jobs:
     timeout-minutes: 20
     needs: verify-secrets
     if: needs.verify-secrets.outputs.secrets_valid == 'true'
-    env:
-      APP_KEY: base64:$(php -r 'echo base64_encode(random_bytes(32));')
-      APP_NAME: TicketFlow
-      APP_ENV: testing
-      DB_CONNECTION: mysql
-      DB_HOST: 127.0.0.1
-      DB_PORT: 3306
-      DB_DATABASE: test_db
-      DB_USERNAME: test_user
-      DB_PASSWORD: test_password
-      MEILISEARCH_HOST: http://localhost:7700
-      MEILISEARCH_KEY: aSampleMasterKey
-
     services:
       mysql:
         image: mysql:8.0
@@ -75,23 +65,12 @@ jobs:
           MYSQL_PASSWORD: test_password
         ports:
           - 3306:3306
-        options: >
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=10s
-          --health-retries=5
-
       meilisearch:
         image: getmeili/meilisearch:v1.11.1
         env:
           MEILI_MASTER_KEY: aSampleMasterKey
         ports:
           - 7700:7700
-        options: >
-          --health-cmd="curl -f http://localhost:7700/health || exit 1"
-          --health-interval=10s
-          --health-timeout=10s
-          --health-retries=5
 
     steps:
       - name: Checkout Code
@@ -112,28 +91,35 @@ jobs:
             ${{ runner.os }}-php-8.2-
 
       - name: Install Composer Dependencies
+        run: composer install --prefer-dist --no-progress --no-scripts
+
+      - name: Generate APP_KEY
+        run: echo "APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')" >> $GITHUB_ENV
+
+      - name: Wait for MySQL
         run: |
-          echo "Installing Composer dependencies..."
-          if ! composer install --prefer-dist --no-progress; then
-            echo "::error::Composer installation failed! Check composer.lock for conflicts."
-            exit 1
-          fi
-          echo "Composer dependencies installed successfully."
+          for i in {1..10}; do
+            if mysqladmin ping --silent; then
+              echo "MySQL is up."
+              break
+            fi
+            echo "Waiting for MySQL to be ready..."
+            sleep 3
+          done
+
+      - name: Wait for MeiliSearch
+        run: |
+          for i in {1..10}; do
+            if curl -f http://localhost:7700/health; then
+              echo "MeiliSearch is up."
+              break
+            fi
+            echo "Waiting for MeiliSearch to be ready..."
+            sleep 3
+          done
 
       - name: Run Database Migrations
-        run: |
-          echo "Running database migrations..."
-          if ! php artisan migrate:fresh --env=testing --force; then
-            echo "::error::Database migrations failed! Check migration files and database connection."
-            exit 1
-          fi
-          echo "Database migrations completed successfully."
+        run: php artisan migrate:fresh --env=testing --force
 
       - name: Run Test Suite
-        run: |
-          echo "Running test suite..."
-          if ! ./vendor/bin/pest --verbose; then
-            echo "::error::Test suite failed! Check test output above for specific failures."
-            exit 1
-          fi
-          echo "Test suite completed successfully."
+        run: ./vendor/bin/pest --verbose
