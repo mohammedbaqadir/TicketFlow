@@ -5,32 +5,36 @@ on:
     workflows: [ "Release" ]
     types: [ completed ]
 
-
 jobs:
   pre-deployment-checks:
     runs-on: ubuntu-latest
+    env:
+      PROD_DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
+      PROD_DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
+      PROD_DEPLOY_PATH: ${{ secrets.PROD_DEPLOY_PATH }}
+      PROD_GH_RUNNER_TO_EC2_KEY: ${{ secrets.PROD_GH_RUNNER_TO_EC2_KEY }}
+      PROD_APP_URL: ${{ secrets.PROD_APP_URL }}
+      PROD_DB_HOST: ${{ secrets.PROD_DB_HOST }}
+      PROD_DB_NAME: ${{ secrets.PROD_DB_NAME }}
+      PROD_DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+      PROD_DB_PORT: ${{ secrets.PROD_DB_PORT }}
+      PROD_DB_USER: ${{ secrets.PROD_DB_USER }}
+      PROD_MEILISEARCH_HOST: ${{ secrets.PROD_MEILISEARCH_HOST }}
+      PROD_MEILISEARCH_KEY: ${{ secrets.PROD_MEILISEARCH_KEY }}
+      PROD_GEMINI_API_KEY: ${{ secrets.PROD_GEMINI_API_KEY }}
+      PROD_JITSI_COOKIE: ${{ secrets.PROD_JITSI_COOKIE }}
     steps:
       - name: Check for Required Secrets
         run: |
           MISSING_SECRETS=()
+          REQUIRED_SECRETS=("PROD_DEPLOY_USER" "PROD_DEPLOY_HOST" "PROD_DEPLOY_PATH" "PROD_GH_RUNNER_TO_EC2_KEY" "PROD_APP_URL" "PROD_DB_HOST" "PROD_DB_NAME" "PROD_DB_PASSWORD" "PROD_DB_PORT" "PROD_DB_USER" "PROD_MEILISEARCH_HOST" "PROD_MEILISEARCH_KEY" "PROD_GEMINI_API_KEY" "PROD_JITSI_COOKIE")
           
-          # Explicitly check each required secret
-          if [ -z "${{ secrets.PROD_DEPLOY_USER }}" ]; then MISSING_SECRETS+=("PROD_DEPLOY_USER"); fi
-          if [ -z "${{ secrets.PROD_DEPLOY_HOST }}" ]; then MISSING_SECRETS+=("PROD_DEPLOY_HOST"); fi
-          if [ -z "${{ secrets.PROD_DEPLOY_PATH }}" ]; then MISSING_SECRETS+=("PROD_DEPLOY_PATH"); fi
-          if [ -z "${{ secrets.PROD_GH_RUNNER_TO_EC2_KEY }}" ]; then MISSING_SECRETS+=("PROD_GH_RUNNER_TO_EC2_KEY"); fi
-          if [ -z "${{ secrets.PROD_APP_URL }}" ]; then MISSING_SECRETS+=("PROD_APP_URL"); fi
-          if [ -z "${{ secrets.PROD_DB_HOST }}" ]; then MISSING_SECRETS+=("PROD_DB_HOST"); fi
-          if [ -z "${{ secrets.PROD_DB_NAME }}" ]; then MISSING_SECRETS+=("PROD_DB_NAME"); fi
-          if [ -z "${{ secrets.PROD_DB_PASSWORD }}" ]; then MISSING_SECRETS+=("PROD_DB_PASSWORD"); fi
-          if [ -z "${{ secrets.PROD_DB_PORT }}" ]; then MISSING_SECRETS+=("PROD_DB_PORT"); fi
-          if [ -z "${{ secrets.PROD_DB_USER }}" ]; then MISSING_SECRETS+=("PROD_DB_USER"); fi
-          if [ -z "${{ secrets.PROD_MEILISEARCH_HOST }}" ]; then MISSING_SECRETS+=("PROD_MEILISEARCH_HOST"); fi
-          if [ -z "${{ secrets.PROD_MEILISEARCH_KEY }}" ]; then MISSING_SECRETS+=("PROD_MEILISEARCH_KEY"); fi
-          if [ -z "${{ secrets.PROD_GEMINI_API_KEY }}" ]; then MISSING_SECRETS+=("PROD_GEMINI_API_KEY"); fi
-          if [ -z "${{ secrets.PROD_JITSI_COOKIE }}" ]; then MISSING_SECRETS+=("PROD_JITSI_COOKIE"); fi
+          for secret in "${REQUIRED_SECRETS[@]}"; do
+            if [ -z "${!secret}" ]; then
+              MISSING_SECRETS+=("$secret")
+            fi
+          done
           
-          # Exit if any secrets are missing
           if [ ${#MISSING_SECRETS[@]} -ne 0 ]; then
             echo "❌ Missing required secrets: ${MISSING_SECRETS[@]}"
             exit 1
@@ -50,6 +54,7 @@ jobs:
 
       - name: Trigger Remote Deployment
         env:
+          GITHUB_SHA: ${{ github.sha }}
           PROD_DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
           PROD_DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
           PROD_DEPLOY_PATH: ${{ secrets.PROD_DEPLOY_PATH }}
@@ -63,11 +68,5 @@ jobs:
           PROD_MEILISEARCH_KEY: ${{ secrets.PROD_MEILISEARCH_KEY }}
           PROD_GEMINI_API_KEY: ${{ secrets.PROD_GEMINI_API_KEY }}
           PROD_JITSI_COOKIE: ${{ secrets.PROD_JITSI_COOKIE }}
-        run: >-
-          ssh -o StrictHostKeyChecking=no $PROD_DEPLOY_USER@$PROD_DEPLOY_HOST 
-          "set -e; 
-          if [ ! -f 'deploy.sh' ]; then 
-            echo '❌ Deployment script deploy.sh not found'; 
-            exit 1; 
-          fi; 
-          bash deploy.sh ${{ github.sha }} 2>&1 | tee deploy.log"
+        run: |
+          ssh -o StrictHostKeyChecking=no $PROD_DEPLOY_USER@$PROD_DEPLOY_HOST "bash deploy.sh $GITHUB_SHA"
