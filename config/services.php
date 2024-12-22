@@ -21,8 +21,9 @@
             'vpaas_magic_cookie' => Env::getOrFail( 'JITSI_VPAAS_MAGIC_COOKIE' ),
         ],
 
-        'gemini' => [
-            'api_key' => Env::getOrFail( 'GEMINI_API_KEY' ),
+        'openrouter' => [
+            'default_model' => 'meta-llama/llama-3.1-70b-instruct:free',
+            'api_key' => Env::getOrFail( 'OPENROUTER_API_KEY' ),
         ],
 
 

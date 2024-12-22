@@ -3,18 +3,17 @@
 
     namespace App\Actions\Ticket;
 
-    use App\Actions\API\GenerateGeminiTextAction;
+    use App\Actions\AI\PromptLLMAction;
     use App\Models\Ticket;
     use Illuminate\Support\Facades\Log;
-    use Illuminate\Validation\ValidationException;
 
     class DetermineTicketPriorityAction
     {
-        protected GenerateGeminiTextAction $generateGeminiTextAction;
+        protected PromptLLMAction $prompt_LLM_action;
 
-        public function __construct( GenerateGeminiTextAction $generateGeminiTextAction )
+        public function __construct( PromptLLMAction $prompt_LLM_action )
         {
-            $this->generateGeminiTextAction = $generateGeminiTextAction;
+            $this->prompt_LLM_action = $prompt_LLM_action;
         }
 
         public function execute( Ticket $ticket ) : array
@@ -33,54 +32,51 @@
         {
             $prompt = "
 **Input:**
-* Title: $title 
-* Description: $description  
+* Title: $title
+* Description: $description
+
 **Context:**
-This prompt simulates an **IT ticketing system** where an employee has submitted a ticket requesting assistance.     
-**Instructions:**
-1. **Analyze Impact:**
-    - Identify keywords in the title and description that indicate the severity of the issue's impact on the employee's ability to perform their job functions.
+You are an IT ticket prioritization system. Your only job is to analyze the ticket and output a single word priority level.
 
-    **High Impact Keywords:**
-        * System outage (server crash, network failure, application down)
-        * Data loss or corruption
-        * Financial impact (payment processing errors, billing issues)
-        * Complete halt of critical business processes
-        * Security breaches or potential security vulnerabilities
+**Priority Classification Rules:**
+1. HIGH Priority:
+   - System outages or failures
+   - Security incidents
+   - Data loss/corruption
+   - Complete work stoppage
+   - Financial system disruptions
 
-    **Medium Impact Keywords:**
-        * Degraded performance (slow loading times, lag, intermittent functionality)
-        * Limited access to critical data or systems
-        * Inability to complete specific tasks or workflows
-        * Disruptions to communication or collaboration
-        * Hardware or software malfunctions impacting productivity
+2. MEDIUM Priority:
+   - Performance degradation
+   - Limited system access
+   - Workflow disruptions
+   - Hardware/software malfunctions
+   - Team-level impacts
 
-    **Low Impact Keywords:**
-        * Minor formatting or display issues
-        * Password reset requests
-        * User interface glitches or inconveniences
-        * Non-critical permission or access requests
-        * Information requests or clarifications
+3. LOW Priority:
+   - Individual user issues
+   - UI/display problems
+   - Password resets
+   - Information requests
+   - Non-urgent improvements
 
-2. **Apply Priority Rules:**
-    - If the title or description mentions high impact keywords, assign \"High\" priority.
-    - If the title or description mentions medium impact keywords, assign \"Medium\" priority.
-    - If no high or medium impact keywords are found, assign \"Low\" priority.
+**Required Output:**
+Respond with exactly one word: high, medium, or low
 
-3. **Consider Context:**
-    - Use common sense to interpret the overall impact of the issue, even if specific keywords aren't present.
-    - For example, a seemingly minor formatting issue might be critical for a presentation.
+Example correct responses:
+high
+medium
+low
 
-**Output:**
-
-**As the IT ticketing system,** assign a one-word priority label (High, Medium, or Low) based on the analyzed impact on the employee's ability to work.";
+Example incorrect responses:
+Priority: high
+The priority is medium
+low priority";
             $priority = 'low';
 
             try {
-                $response = $this->generateGeminiTextAction->execute( $prompt );
-                $priority = strtolower( preg_replace( '/[^a-zA-Z]/', '', $response ) );
-            } catch (ValidationException $e) {
-                Log::warning( 'Rate limit exceeded for Gemini API: ' . $e->getMessage() );
+                $response = $this->prompt_LLM_action->execute( $prompt );
+                $priority = strtolower( preg_replace( '/[^a-zA-Z]/', '', $response['text'] ?? '' ) );
             } catch (\Exception $e) {
                 Log::error( 'API error while determining priority: ' . $e->getMessage() );
             }

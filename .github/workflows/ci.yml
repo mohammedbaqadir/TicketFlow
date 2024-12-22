@@ -26,21 +26,20 @@ jobs:
     outputs:
       secrets_valid: ${{ steps.validate-secrets.outputs.secrets_valid }}
     env:
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      JITSI_VPAAS_MAGIC_COOKIE: ${{ secrets.JITSI_VPAAS_MAGIC_COOKIE }}
+      OPENROUTER_API_KEY: ${{ secrets.TEST_OPENROUTER_API_KEY }}
     steps:
       - id: validate-secrets
         name: Validate Secrets
         run: |
-          required_secrets=("GEMINI_API_KEY" "JITSI_VPAAS_MAGIC_COOKIE")
+          required_secrets=("OPENROUTER_API_KEY")
           missing_secrets=()
-          
+
           for secret in "${required_secrets[@]}"; do
             if [ -z "${!secret}" ]; then
               missing_secrets+=("$secret")
             fi
           done
-          
+
           if [ ${#missing_secrets[@]} -eq 0 ]; then
             echo "All required secrets are present"
             echo "secrets_valid=true" >> $GITHUB_OUTPUT
@@ -55,6 +54,8 @@ jobs:
     timeout-minutes: 20
     needs: verify-secrets
     if: needs.verify-secrets.outputs.secrets_valid == 'true'
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.TEST_OPENROUTER_API_KEY }}
     services:
       mysql:
         image: mysql:8.0
@@ -93,8 +94,58 @@ jobs:
       - name: Install Composer Dependencies
         run: composer install --prefer-dist --no-progress --no-scripts
 
-      - name: Generate APP_KEY
-        run: echo "APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')" >> $GITHUB_ENV
+      - name: Setup Environment
+        run: |
+          echo "APP_NAME=TicketFlow" >> $GITHUB_ENV
+          echo "APP_ENV=testing" >> $GITHUB_ENV
+          echo "APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')" >> $GITHUB_ENV
+          echo "APP_DEBUG=true" >> $GITHUB_ENV
+          echo "APP_TIMEZONE=Asia/Riyadh" >> $GITHUB_ENV
+          echo "APP_URL=http://localhost" >> $GITHUB_ENV
+
+          echo "APP_LOCALE=en" >> $GITHUB_ENV
+          echo "APP_FALLBACK_LOCALE=en" >> $GITHUB_ENV
+          echo "APP_FAKER_LOCALE=en_US" >> $GITHUB_ENV
+
+          echo "APP_MAINTENANCE_DRIVER=file" >> $GITHUB_ENV
+          echo "APP_MAINTENANCE_STORE=database" >> $GITHUB_ENV
+
+          echo "BCRYPT_ROUNDS=12" >> $GITHUB_ENV
+
+          echo "LOG_CHANNEL=stack" >> $GITHUB_ENV
+          echo "LOG_STACK=single" >> $GITHUB_ENV
+          echo "LOG_DEPRECATIONS_CHANNEL=null" >> $GITHUB_ENV
+          echo "LOG_LEVEL=debug" >> $GITHUB_ENV
+
+          echo "DB_CONNECTION=mysql" >> $GITHUB_ENV
+          echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV
+          echo "DB_PORT=3306" >> $GITHUB_ENV
+          echo "DB_DATABASE=test_db" >> $GITHUB_ENV
+          echo "DB_USERNAME=test_user" >> $GITHUB_ENV
+          echo "DB_PASSWORD=test_password" >> $GITHUB_ENV
+
+          echo "SESSION_DRIVER=database" >> $GITHUB_ENV
+          echo "SESSION_LIFETIME=120" >> $GITHUB_ENV
+          echo "SESSION_ENCRYPT=false" >> $GITHUB_ENV
+          echo "SESSION_PATH=/" >> $GITHUB_ENV
+          echo "SESSION_DOMAIN=null" >> $GITHUB_ENV
+
+          echo "BROADCAST_CONNECTION=log" >> $GITHUB_ENV
+          echo "FILESYSTEM_DISK=local" >> $GITHUB_ENV
+          echo "QUEUE_CONNECTION=database" >> $GITHUB_ENV
+
+          echo "CACHE_STORE=database" >> $GITHUB_ENV
+          echo "CACHE_PREFIX=" >> $GITHUB_ENV
+
+          echo "VITE_APP_NAME=TicketFlow" >> $GITHUB_ENV
+
+          echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" >> $GITHUB_ENV
+          echo "SCOUT_DRIVER=meilisearch" >> $GITHUB_ENV
+          echo "SCOUT_QUEUE=true" >> $GITHUB_ENV
+          echo "MEILISEARCH_HOST=http://localhost:7700" >> $GITHUB_ENV
+          echo "MEILISEARCH_KEY=aSampleMasterKey" >> $GITHUB_ENV
+          echo "JITSI_VPAAS_MAGIC_COOKIE=vpaas-magic-cookie-" >> $GITHUB_ENV
+
 
       - name: Wait for MySQL
         run: |
@@ -122,4 +173,4 @@ jobs:
         run: php artisan migrate:fresh --env=testing --force
 
       - name: Run Test Suite
-        run: ./vendor/bin/pest --verbose
+        run: ./vendor/bin/pest
