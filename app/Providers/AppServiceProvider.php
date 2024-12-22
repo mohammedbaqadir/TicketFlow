@@ -37,7 +37,6 @@
                 function ( $message, $description = '', $type = 'success', $position = 'top-right', $html = '' ) {
                     return $this->with( 'toast', compact( 'message', 'description', 'type', 'position', 'html' ) );
                 } );
-
         }
 
         /**
@@ -48,8 +47,7 @@
             $this->setGlobalRateLimit();
             $this->setAuthRateLimit();
             $this->setLoginRateLimit();
-            $this->setGeminiApiRateLimit();
-            $this->setOpcacheResetRateLimit();
+
         }
 
         /**
@@ -87,16 +85,6 @@
                     Limit::perMinute( config( 'lockout.ip_limit', 20 ) )->by( $request->ip() ),
                     Limit::perMinute( config( 'lockout.email_limit', 5 ) )->by( $request->input( 'email' ) ),
                 ];
-            } );
-        }
-
-        /**
-         * Set rate limit for Gemini API requests.
-         */
-        private function setGeminiApiRateLimit() : void
-        {
-            RateLimiter::for( 'gemini-api', function ( Request $request ) {
-                return Limit::perMinute( 10 )->by( $request->ip() );
             } );
         }
 

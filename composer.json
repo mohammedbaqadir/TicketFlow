@@ -15,7 +15,6 @@
     "filament/spatie-laravel-media-library-plugin": "^3.2",
     "filament/widgets": "^3.2",
     "filipfonal/filament-log-manager": "^2.0",
-    "gemini-api-php/laravel": "^0.3.0",
     "http-interop/http-factory-guzzle": "^1.2",
     "laravel/framework": "^11.9",
     "laravel/scout": "^10.10",
