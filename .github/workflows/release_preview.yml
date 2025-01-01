@@ -42,10 +42,9 @@ jobs:
       - name: Install Semantic Release
         run: npm install -D semantic-release@24.2.0
 
-      # Uses the exact same config as the real release workflow
       - name: Create Release Config
         run: |
-          cat > .releaserc.json << EOF
+          cat > .releaserc.json << 'EOF'
           {
             "plugins": [
               [
@@ -112,7 +111,7 @@ jobs:
                       "DEPRECATED"
                     ],
                     "commitPartial": "* {{#if scope}}**{{scope}}**: {{/if}}{{subject}}\n{{~!-- commit link --}}{{#if hash}} {{#if @root.linkReferences}}([{{shortHash}}]({{commitUrlFormat}})){{else}}{{shortHash}}{{/if}}{{/if}}",
-          "footerPartial": "{{#if noteGroups}}\n{{#each noteGroups}}\n### {{title}}\n{{#each notes}}\n* {{#if commit.scope}}**{{commit.scope}}**: {{/if}}{{text}}\n{{/each}}\n{{/each}}{{/if}}\n"
+                    "footerPartial": "{{#if noteGroups}}\n{{#each noteGroups}}\n### {{title}}\n{{#each notes}}\n* {{#if commit.scope}}**{{commit.scope}}**: {{/if}}{{text}}\n{{/each}}\n{{/each}}{{/if}}\n"
                   },
                   "linkCompare": true,
                   "linkReferences": true

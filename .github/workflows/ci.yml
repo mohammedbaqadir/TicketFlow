@@ -17,6 +17,8 @@ on:
 concurrency:
   group: ci-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
+env:
+  CI: true
 
 jobs:
   verify-secrets:
