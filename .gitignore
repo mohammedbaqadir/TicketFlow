@@ -1,4 +1,5 @@
 .env
+.env.testing
 *.swp
 /.fleet
 /.idea
