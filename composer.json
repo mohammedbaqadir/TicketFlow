@@ -25,7 +25,8 @@
     "spatie/laravel-activitylog": "^4.8",
     "spatie/laravel-failed-job-monitor": "^4.3",
     "spatie/laravel-medialibrary": "^11.7",
-    "spatie/laravel-schedule-monitor": "^3.8"
+    "spatie/laravel-schedule-monitor": "^3.8",
+    "xchimx/laravel-unsplash": "^1.0"
   },
   "require-dev": {
     "fakerphp/faker": "^1.23",
