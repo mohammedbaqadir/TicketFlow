@@ -74,8 +74,8 @@
             $this->addMediaCollection( 'avatar' )
                 ->singleFile()
                 ->onlyKeepLatest( 1 )
-                ->useFallbackUrl( '/images/default-avatar.jpg' )
-                ->useFallbackPath( public_path( '/images/default-avatar.jpg' ) );
+                ->useFallbackUrl( asset( 'storage/avatar/default-avatar.jpg' ) )
+                ->useFallbackPath( storage_path( 'app/public/avatar/default-avatar.jpg' ) );
         }
 
 
