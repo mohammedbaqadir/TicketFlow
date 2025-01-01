@@ -5,21 +5,33 @@
 
     use App\Models\User;
     use Illuminate\Database\Seeder;
+    use Illuminate\Support\Facades\Log;
 
     class UserSeeder extends Seeder
     {
+        private const DELAY_SECONDS = 5;
+
         /**
          * Run the database seeds.
          */
         public function run() : void
         {
-            User::factory()->create( [
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-                'password' => bcrypt( 'password' ),
-                'role' => 'admin'
-            ] );
+            Log::info( 'Starting user seeding process' );
 
-            User::factory( 15 )->create();
+            $count = 15;
+            $created = 0;
+
+            while ( $created < $count ) {
+                if ( $created > 0 ) {
+                    sleep( self::DELAY_SECONDS );
+                }
+
+                User::factory()->create();
+                $created++;
+
+                Log::info( "Created user {$created} of {$count}" );
+            }
+
+            Log::info( 'User seeding completed' );
         }
     }

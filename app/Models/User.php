@@ -71,10 +71,18 @@
 
         public function registerMediaCollections() : void
         {
+            // Disable fallback in CI
+            if ( env( 'CI', false ) ) {
+                $this->addMediaCollection( 'avatar' )
+                    ->singleFile()
+                    ->onlyKeepLatest( 1 );
+                return;
+            }
+
             $this->addMediaCollection( 'avatar' )
                 ->singleFile()
                 ->onlyKeepLatest( 1 )
-                ->useFallbackUrl( asset( 'storage/avatar/default-avatar.jpg' ) )
+                ->useFallbackUrl( url( 'storage/avatar/default-avatar.jpg' ) )
                 ->useFallbackPath( storage_path( 'app/public/avatar/default-avatar.jpg' ) );
         }
 
