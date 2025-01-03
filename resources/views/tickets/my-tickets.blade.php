@@ -47,4 +47,5 @@
                                          :no_tickets_msg="$group['no_tickets_msg']">
         </x-tickets.index.section.content>
     @endforeach
+    {{ $tickets->links() }}
 @endsection

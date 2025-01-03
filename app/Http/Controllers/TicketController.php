@@ -6,8 +6,10 @@
     use App\Actions\Ticket\AssignTicketAction;
     use App\Actions\Ticket\CreateTicketAction;
     use App\Actions\Ticket\DeleteTicketAction;
+    use App\Actions\Ticket\GroupTicketsAction;
     use App\Actions\Ticket\UnassignTicketAction;
     use App\Actions\Ticket\UpdateTicketAction;
+    use App\Config\TicketGroupings;
     use App\Http\Requests\StoreTicketRequest;
     use App\Http\Requests\UpdateTicketRequest;
     use App\Models\Ticket;
@@ -24,12 +26,22 @@
     {
         use AuthorizesRequests;
 
+        public function __construct(
+            private readonly GroupTicketsAction $groupTicketsAction
+        ) {
+        }
+
         public function index() : View
         {
             $this->authorize( 'viewAny', Ticket::class );
             $tickets = Ticket::withRelations()
                 ->paginate( 10 );
-            return view( 'tickets.index', compact( 'tickets' ) );
+            $ticketGroups = $this->groupTicketsAction->execute(
+                $tickets->getCollection(),
+                TicketGroupings::getIndexGroupings(),
+                auth()->user()
+            );
+            return view( 'tickets.index', compact( 'ticketGroups','tickets' ) );
         }
 
         public function create() : View
@@ -165,7 +177,12 @@
                 ->withRelations()
                 ->paginate( 10 );
 
-            return view( 'tickets.my-tickets', compact( 'tickets' ) );
+            $ticketGroups = $this->groupTicketsAction->execute(
+                $tickets->getCollection(),
+                TicketGroupings::getMyTicketsGroupings()
+            );
+
+            return view( 'tickets.my-tickets', compact( 'ticketGroups', 'tickets' ) );
         }
 
         public function assign( Ticket $ticket, AssignTicketAction $assignTicketAction ) : RedirectResponse
