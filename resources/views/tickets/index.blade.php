@@ -1,34 +1,3 @@
-@php
-    use App\Models\Ticket;
-
-        $ticketGroups = [
-                    [
-                        'title' => 'Working On It',
-                        'tickets' => $tickets->filter( fn( $ticket ) =>
-                            $ticket->assignee_id === auth()->id() &&
-                            in_array($ticket->status, ['in-progress', 'awaiting-acceptance'])
-                          ),
-                        'no_tickets_msg' => 'You Are Not Currently Working on Any Tickets',
-                    ],
-                    [
-                        'title' => 'Un-Assigned Tickets',
-                        'tickets' => $tickets->filter( fn( $ticket ) => $ticket->status === 'open'),
-                        'no_tickets_msg' => 'There are No Un-Assigned Tickets',
-                    ],
-                    [
-                        'title' => 'Resolved It',
-                        'tickets' => $tickets->filter( fn( $ticket ) =>
-                                        $ticket->status === 'resolved' &&
-                                        $ticket->assignee_id === auth()->id() ),
-                        'no_tickets_msg' => 'You did NOT Resolve Any Tickets Yet',
-                    ],
-                    [
-                        'title' => 'Resolved',
-                        'tickets' => $tickets->filter( fn( $ticket ) => $ticket->status === 'resolved' ),
-                        'no_tickets_msg' => 'There are No Resolved Tickets',
-                    ]
-                ]
-@endphp
 @extends('components.layout.app')
 @section('content')
     <div class="mb-6 flex justify-end">
@@ -47,4 +16,5 @@
                                          :no_tickets_msg="$group['no_tickets_msg']">
         </x-tickets.index.section.content>
     @endforeach
+    {{ $tickets->links() }}
 @endsection
