@@ -122,8 +122,8 @@ jobs:
                 }
               ],
               ["@semantic-release/github", {
-                "successComment": ":tada: This issue has been resolved in version \${nextRelease.version} :tada:\n\nThe release is available on [GitHub release](\${releases[0].url})",
-                "failComment": ":rotating_light: This release failed due to the following errors:\n\n\${errors.map(error => error.message).join('\n')}",
+                "successComment": ":tada: This issue has been resolved in version ${nextRelease.version} :tada:\n\nThe release is available on [GitHub release](${releases[0].url})",
+                "failComment": ":rotating_light: This release failed due to the following errors:\n\n${errors.map(error => error.message).join('\n')}",
                 "failTitle": "🚨 Automated Release Failed",
                 "labels": ["released"],
                 "releasedLabels": ["released"]
