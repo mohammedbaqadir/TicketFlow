@@ -118,8 +118,8 @@ jobs:
                 }
               ],
               ["@semantic-release/github", {
-                "successComment": "🔍 **Release Preview**\n\nWhen merged, this PR will create version \${nextRelease.version} with the following release notes:\n\n\${nextRelease.notes}",
-                "failComment": "⚠️ Release preview failed due to the following errors:\n\n\${errors.map(error => error.message).join('\\n')}",
+                "successComment": "🔍 **Release Preview**\n\nWhen merged, this PR will create version ${nextRelease.version} with the following release notes:\n\n${nextRelease.notes}",
+                "failComment": "⚠️ Release preview failed due to the following errors:\n\n${errors.map(error => error.message).join('\n')",
                 "failTitle": "Release Preview Failed",
                 "labels": ["has-release-preview"],
                 "releasedLabels": ["has-release-preview"]
