@@ -19,7 +19,7 @@
          */
         public static function getIndexGroupings() : array
         {
-            $groupings = Config::get( 'tickets.groupings.index', [] );
+            $groupings = Config::get( 'tickets.groupings.index' );
             TicketGroupingsValidator::validate( $groupings );
 
             return $groupings;
@@ -32,7 +32,7 @@
          */
         public static function getMyTicketsGroupings() : array
         {
-            $groupings = Config::get( 'tickets.groupings.my_tickets', [] );
+            $groupings = Config::get( 'tickets.groupings.my_tickets' );
             TicketGroupingsValidator::validate( $groupings );
 
             return $groupings;
