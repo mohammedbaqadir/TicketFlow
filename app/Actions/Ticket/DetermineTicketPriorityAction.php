@@ -4,7 +4,6 @@
     namespace App\Actions\Ticket;
 
     use App\Actions\AI\PromptLLMAction;
-    use App\Config\TicketConfig;
     use App\Models\Ticket;
     use Illuminate\Support\Facades\Log;
 
@@ -27,6 +26,7 @@
                 'timeout_at' => $timeoutAt,
             ];
         }
+
 
         private function determinePriority( string $title, string $description ) : string
         {
@@ -86,7 +86,7 @@ low priority";
 
         private function determineTimeout( string $priority ) : int
         {
-            return TicketConfig::getTimeoutForPriority( $priority );
+            return config( "enums.priority_timeout.{$priority}", 8 );
         }
 
     }

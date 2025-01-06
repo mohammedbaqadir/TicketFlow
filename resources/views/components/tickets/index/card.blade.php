@@ -1,3 +1,6 @@
+@php
+    use App\Helpers\AuthHelper;
+@endphp
 @props(['ticket'])
 
 @php

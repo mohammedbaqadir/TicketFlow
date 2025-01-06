@@ -1,4 +1,3 @@
-@php use App\Config\TicketConfig; @endphp
 @props(['status'])
 
 @php
@@ -20,7 +19,7 @@
 ];
 
 
-    $statusLabels = TicketConfig::getStatuses();
+    $statusLabels = config('enums.ticket_status');
 
     $statusStyle = $statusStyles[$status] ?? $statusStyles['open'];
     $statusIcon = $statusIcons[$status] ?? $statusIcons['open'];
