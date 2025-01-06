@@ -5,20 +5,17 @@ on:
     workflows: [ "CI" ]
     types: [ completed ]
 
-# Prevents concurrent previews and cancels redundant runs
 concurrency:
   group: release-preview-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
-# Read-only permissions since this is just a preview
 permissions:
   contents: read
   issues: read
-  pull-requests: write  # Needed to comment on PR
+  pull-requests: write
 
 jobs:
   release-preview:
-    # Only proceed if the triggering CI workflow succeeded and was triggered by a PR
     if: |
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'pull_request'
@@ -27,12 +24,10 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      # Fetches all history and tags for accurate versioning
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -46,6 +41,9 @@ jobs:
         run: |
           cat > .releaserc.json << 'EOF'
           {
+            "branches": ["main"],
+            "dryRun": true,
+            "ci": false,
             "plugins": [
               [
                 "@semantic-release/commit-analyzer",
@@ -109,12 +107,8 @@ jobs:
                       "BREAKING CHANGES",
                       "BREAKING",
                       "DEPRECATED"
-                    ],
-                    "commitPartial": "* {{#if scope}}**{{scope}}**: {{/if}}{{subject}}\n{{~!-- commit link --}}{{#if hash}} {{#if @root.linkReferences}}([{{shortHash}}]({{commitUrlFormat}})){{else}}{{shortHash}}{{/if}}{{/if}}",
-                    "footerPartial": "{{#if noteGroups}}\n{{#each noteGroups}}\n### {{title}}\n{{#each notes}}\n* {{#if commit.scope}}**{{commit.scope}}**: {{/if}}{{text}}\n{{/each}}\n{{/each}}{{/if}}\n"
-                  },
-                  "linkCompare": true,
-                  "linkReferences": true
+                    ]
+                  }
                 }
               ],
               ["@semantic-release/github", {
@@ -128,10 +122,7 @@ jobs:
           }
           EOF
 
-      # Runs semantic-release in dry-run mode and captures output
       - name: Run Release Preview
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Run in dry-run mode and capture output
-          npx semantic-release --dry-run
+        run: npx semantic-release --dry-run --no-ci
