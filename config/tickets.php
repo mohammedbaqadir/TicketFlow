@@ -5,63 +5,66 @@
         'groupings' => [
             'index' => [
                 [
-                    'title' => 'Working On It',
-                    'status' => [ 'in-progress', 'awaiting-acceptance' ],
+                    'title' => 'Pending Action',
+                    'status' => [ 'in-progress' ],
                     'assignee_required' => true,
-                    'no_tickets_msg' => 'You Are Not Currently Working on Any Tickets'
+                    'no_tickets_msg' => 'You have no active tickets'
                 ],
                 [
-                    'title' => 'Un-Assigned Tickets',
+                    'title' => 'Pending Response',
+                    'status' => [ 'awaiting-acceptance' ],
+                    'assignee_required' => true,
+                    'no_tickets_msg' => 'No tickets awaiting customer response'
+                ],
+                [
+                    'title' => 'Unassigned Tickets',
                     'status' => [ 'open' ],
                     'assignee_required' => false,
-                    'no_tickets_msg' => 'There are No Un-Assigned Tickets'
+                    'no_tickets_msg' => 'No tickets need assignment'
                 ],
                 [
-                    'title' => 'Resolved It',
+                    'title' => 'Recently Resolved',
                     'status' => [ 'resolved' ],
                     'assignee_required' => true,
-                    'no_tickets_msg' => 'You did NOT Resolve Any Tickets Yet'
-                ],
-                [
-                    'title' => 'Resolved',
-                    'status' => [ 'resolved' ],
-                    'assignee_required' => false,
-                    'no_tickets_msg' => 'There are No Resolved Tickets'
+                    'no_tickets_msg' => 'No recently resolved tickets'
                 ]
             ],
             'my_tickets' => [
                 [
-                    'title' => 'Pending Action',
+                    'title' => 'Needs Your Response',
                     'status' => [ 'awaiting-acceptance' ],
-                    'no_tickets_msg' => 'no tickets are pending action from you'
+                    'no_tickets_msg' => 'No tickets need your response',
                 ],
                 [
-                    'title' => 'On-Going',
-                    'status' => [ 'open', 'in-progress', 'escalated' ],
-                    'no_tickets_msg' => 'you do not have ongoing tickets'
+                    'title' => 'Active Tickets',
+                    'status' => [ 'open', 'in-progress' ],
+                    'no_tickets_msg' => 'You have no active tickets',
                 ],
                 [
-                    'title' => 'Resolved',
+                    'title' => 'Escalated',
+                    'status' => [ 'escalated' ],
+                    'no_tickets_msg' => 'You have no escalated tickets',
+                ],
+                [
+                    'title' => 'Recently Resolved',
                     'status' => [ 'resolved' ],
-                    'no_tickets_msg' => 'you do not have any closed tickets yet'
+                    'no_tickets_msg' => 'No tickets were resolved recently',
                 ]
             ]
         ],
-        'status' => [
+        'statuses' => [
             'open' => 'OPEN',
             'in-progress' => 'IN PROGRESS',
             'awaiting-acceptance' => 'AWAITING ACCEPTANCE',
             'escalated' => 'ESCALATED',
             'resolved' => 'RESOLVED',
         ],
-
-        'priority' => [
+        'priorities' => [
             'low' => 'LOW',
             'medium' => 'MEDIUM',
             'high' => 'HIGH',
         ],
-
-        'priority_timeout' => [
+        'priority_timeouts' => [
             'low' => 8,
             'medium' => 4,
             'high' => 2,

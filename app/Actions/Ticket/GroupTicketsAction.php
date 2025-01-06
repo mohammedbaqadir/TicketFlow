@@ -21,26 +21,25 @@
          */
         public function execute( Collection $tickets, array $groupConfigs, ?User $user = null ) : array
         {
-            $ticketGroups = [];
-
             try {
                 if ( $tickets->isEmpty() ) {
-                    $ticketGroups = $this->getEmptyGroups( $groupConfigs );
-                } else {
-                    $ticketGroups = array_map(
-                        fn( array $config ) : array => [
+                    return $this->getEmptyGroups( $groupConfigs );
+                }
+
+                return array_map(
+                    function ( array $config ) use ( $tickets, $user ) : array {
+                        return [
                             'title' => $config['title'],
                             'tickets' => $this->filterTickets( $tickets, $config, $user ),
                             'no_tickets_msg' => $config['no_tickets_msg']
-                        ],
-                        $groupConfigs
-                    );
-                }
+                        ];
+                    },
+                    $groupConfigs
+                );
             } catch (Throwable $e) {
                 report( $e );
-                $ticketGroups = $this->getFallbackGroups( $tickets );
+                return $this->getFallbackGroups( $tickets );
             }
-            return $ticketGroups;
         }
 
         /**
@@ -55,14 +54,19 @@
         {
             try {
                 return $tickets->filter( function ( $ticket ) use ( $config, $user ) {
-                    $statusMatch = \in_array( $ticket->status, $config['status'], true );
-
-                    if ( !$statusMatch ) {
+                    // Status check is mandatory
+                    if ( !$this->matchesStatus( $ticket, $config ) ) {
                         return false;
                     }
 
-                    if ( isset( $config['assignee_required'] ) && $config['assignee_required'] ) {
-                        return $user && $ticket->assignee_id === $user->id;
+                    // Assignee check if required
+                    if ( isset( $config['assignee_required'] ) ) {
+                        if ( $config['assignee_required'] && ( !$user || $ticket->assignee_id !== $user->id ) ) {
+                            return false;
+                        }
+                        if ( !$config['assignee_required'] && $ticket->assignee_id !== null ) {
+                            return false;
+                        }
                     }
 
                     return true;
@@ -74,6 +78,18 @@
         }
 
         /**
+         * Check if ticket status matches configuration
+         *
+         * @param $ticket
+         * @param  array  $config
+         * @return bool
+         */
+        private function matchesStatus( $ticket, array $config ) : bool
+        {
+            return \in_array( $ticket->status, $config['status'], true );
+        }
+
+        /**
          * Generate empty groups from configuration
          *
          * @param  array  $groupConfigs
@@ -82,11 +98,13 @@
         private function getEmptyGroups( array $groupConfigs ) : array
         {
             return array_map(
-                fn( array $config ) : array => [
-                    'title' => $config['title'],
-                    'tickets' => collect(),
-                    'no_tickets_msg' => $config['no_tickets_msg']
-                ],
+                function ( array $config ) : array {
+                    return [
+                        'title' => $config['title'],
+                        'tickets' => collect(),
+                        'no_tickets_msg' => $config['no_tickets_msg']
+                    ];
+                },
                 $groupConfigs
             );
         }
