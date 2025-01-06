@@ -9,6 +9,7 @@ jobs:
   pre-deployment-checks:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    environment: production
     env:
       PROD_DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
       PROD_DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
@@ -31,16 +32,16 @@ jobs:
       - name: Check for Required Secrets
         run: |
           MISSING_SECRETS=()
-          REQUIRED_SECRETS=("PROD_DEPLOY_USER" "PROD_DEPLOY_HOST" "PROD_DEPLOY_PATH" "PROD_GH_RUNNER_TO_EC2_KEY" 
-          "PROD_APP_URL" "PROD_DB_HOST" "PROD_DB_NAME" "PROD_DB_PASSWORD" "PROD_DB_PORT" "PROD_DB_USER" 
+          REQUIRED_SECRETS=("PROD_DEPLOY_USER" "PROD_DEPLOY_HOST" "PROD_DEPLOY_PATH" "PROD_GH_RUNNER_TO_EC2_KEY"
+          "PROD_APP_URL" "PROD_DB_HOST" "PROD_DB_NAME" "PROD_DB_PASSWORD" "PROD_DB_PORT" "PROD_DB_USER"
           "PROD_MEILISEARCH_HOST" "PROD_MEILISEARCH_KEY" "PROD_OPENROUTER_API_KEY" "PROD_JITSI_COOKIE" "PROD_UNSPLASH_ACCESS_KEY" "PROD_UNSPLASH_RATE_LIMITING_ENABLED" "PROD_UNSPLASH_RATE_LIMITING_THRESHOLD")
-          
+
           for secret in "${REQUIRED_SECRETS[@]}"; do
             if [ -z "${!secret}" ]; then
               MISSING_SECRETS+=("$secret")
             fi
           done
-          
+
           if [ ${#MISSING_SECRETS[@]} -ne 0 ]; then
             echo "❌ Missing required secrets: ${MISSING_SECRETS[@]}"
             exit 1
@@ -49,6 +50,7 @@ jobs:
   deploy:
     needs: pre-deployment-checks
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
