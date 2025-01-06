@@ -3,6 +3,7 @@
 
     namespace App\Models;
 
+    use App\Config\TicketConfig;
     use App\Observers\TicketObserver;
     use Illuminate\Database\Eloquent\Attributes\ObservedBy;
     use Illuminate\Database\Eloquent\Builder;
@@ -57,12 +58,12 @@
         // Accessors & Mutators
         public function getFormattedStatusAttribute() : string
         {
-            return config( "enums.ticket_status.{$this->status}" );
+            return TicketConfig::getStatusLabel( $this->status );
         }
 
         public function getFormattedPriorityAttribute() : string
         {
-            return config( "enums.ticket_priority.{$this->priority}" );
+            return TicketConfig::getPriorityLabel( $this->priority );
         }
 
 
