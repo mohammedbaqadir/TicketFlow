@@ -124,6 +124,11 @@
          */
         public static function getTimeoutForPriority( string $priority ) : int
         {
+            // First validate that this is a valid priority
+            if ( !self::hasPriority( $priority ) ) {
+                throw new RuntimeException( "Invalid priority: {$priority}" );
+            }
+
             $timeouts = self::getPriorityTimeouts();
 
             if ( !isset( $timeouts[ $priority ] ) ) {

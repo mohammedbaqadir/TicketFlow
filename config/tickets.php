@@ -37,7 +37,7 @@
                 ],
                 [
                     'title' => 'On-Going',
-                    'status' => [ 'open', 'in-progress', 'escalated' ],
+                    'status' => [ 'open', 'in-progress', 'elevated' ],
                     'no_tickets_msg' => 'you do not have ongoing tickets'
                 ],
                 [
