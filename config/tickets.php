@@ -46,24 +46,5 @@
                     'no_tickets_msg' => 'you do not have any closed tickets yet'
                 ]
             ]
-        ],
-        'status' => [
-            'open' => 'OPEN',
-            'in-progress' => 'IN PROGRESS',
-            'awaiting-acceptance' => 'AWAITING ACCEPTANCE',
-            'escalated' => 'ESCALATED',
-            'resolved' => 'RESOLVED',
-        ],
-
-        'priority' => [
-            'low' => 'LOW',
-            'medium' => 'MEDIUM',
-            'high' => 'HIGH',
-        ],
-
-        'priority_timeout' => [
-            'low' => 8,
-            'medium' => 4,
-            'high' => 2,
-        ],
+        ]
     ];
