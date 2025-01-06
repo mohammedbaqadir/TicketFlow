@@ -9,7 +9,7 @@
     use App\Actions\Ticket\GroupTicketsAction;
     use App\Actions\Ticket\UnassignTicketAction;
     use App\Actions\Ticket\UpdateTicketAction;
-    use App\Config\TicketGroupings;
+    use App\Config\TicketConfig;
     use App\Http\Requests\StoreTicketRequest;
     use App\Http\Requests\UpdateTicketRequest;
     use App\Models\Ticket;
@@ -38,10 +38,10 @@
                 ->paginate( 10 );
             $ticketGroups = $this->groupTicketsAction->execute(
                 $tickets->getCollection(),
-                TicketGroupings::getIndexGroupings(),
+                TicketConfig::getIndexGroupings(),
                 auth()->user()
             );
-            return view( 'tickets.index', compact( 'ticketGroups','tickets' ) );
+            return view( 'tickets.index', compact( 'ticketGroups', 'tickets' ) );
         }
 
         public function create() : View
@@ -179,7 +179,7 @@
 
             $ticketGroups = $this->groupTicketsAction->execute(
                 $tickets->getCollection(),
-                TicketGroupings::getMyTicketsGroupings()
+                TicketConfig::getMyTicketsGroupings()
             );
 
             return view( 'tickets.my-tickets', compact( 'ticketGroups', 'tickets' ) );

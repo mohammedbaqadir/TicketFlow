@@ -2,6 +2,7 @@
 
     namespace Database\Factories;
 
+    use App\Config\TicketConfig;
     use App\Models\User;
     use Carbon\Carbon;
     use Illuminate\Database\Eloquent\Factories\Factory;
@@ -14,8 +15,8 @@
             return [
                 'title' => $this->faker->sentence,
                 'description' => $this->faker->paragraph,
-                'status' => Arr::random( array_keys( config( 'enums.ticket_status' ) ) ),
-                'priority' => Arr::random( array_keys( config( 'enums.ticket_priority' ) ) ),
+                'status' => Arr::random( array_keys( TicketConfig::getStatuses() ) ),
+                'priority' => Arr::random( array_keys( TicketConfig::getPriorities() ) ),
                 'timeout_at' => $this->faker->dateTimeBetween( '-2 hours', '+2 hours' ),
                 'requestor_id' => null,  // Optional by default
                 'assignee_id' => null,   // Optional by default
