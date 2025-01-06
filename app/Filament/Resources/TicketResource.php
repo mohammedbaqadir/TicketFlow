@@ -5,6 +5,7 @@
 
     use App\Actions\Ticket\AssignTicketAction;
     use App\Actions\Ticket\UnassignTicketAction;
+    use App\Config\TicketConfig;
     use App\Filament\Resources\TicketResource\Pages\CreateTicket;
     use App\Filament\Resources\TicketResource\Pages\EditTicket;
     use App\Filament\Resources\TicketResource\Pages\ListTickets;
@@ -100,10 +101,10 @@
                 ] )
                 ->filters( [
                     SelectFilter::make( 'status' )
-                        ->options( array_flip( config( 'enums.ticket_status' ) ) ),
+                        ->options( array_flip( TicketConfig::getStatuses() ) ),
 
                     SelectFilter::make( 'priority' )
-                        ->options( array_flip( config( 'enums.ticket_priority' ) ) ),
+                        ->options( array_flip( TicketConfig::getPriorities() ) ),
 
                 ] )
                 ->actions( [
@@ -180,7 +181,7 @@
         private static function getTicketsNavigationItems() : array
         {
             $nav_items = [];
-            $mappings = config( 'enums.ticket_status' );
+            $mappings = TicketConfig::getStatuses();
             foreach ( $mappings as $status => $label ) {
                 $nav_items[] = self::createNavigationItem( $label, $status );
             }
