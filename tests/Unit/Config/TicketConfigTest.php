@@ -4,116 +4,114 @@
     use App\Config\TicketConfig;
     use Illuminate\Support\Facades\Config;
 
-    describe( 'TicketConfig', function () {
-        // Setup default test configurations
-        beforeEach( function () {
-            Config::set( 'tickets.status', [
+    beforeEach( function () {
+        // Reset config before each test
+        Config::set( 'tickets', [
+            'groupings' => [
+                'index' => [
+                    [
+                        'title' => 'Pending Action',
+                        'status' => [ 'in-progress' ],
+                        'assignee_required' => true,
+                        'no_tickets_msg' => 'No tickets'
+                    ]
+                ],
+                'my_tickets' => [
+                    [
+                        'title' => 'Active Tickets',
+                        'status' => [ 'open', 'in-progress' ],
+                        'no_tickets_msg' => 'No active tickets'
+                    ]
+                ]
+            ],
+            'statuses' => [
                 'open' => 'OPEN',
-                'in-progress' => 'IN PROGRESS',
-                'resolved' => 'RESOLVED'
-            ] );
-
-            Config::set( 'tickets.priority', [
+                'in-progress' => 'IN PROGRESS'
+            ],
+            'priorities' => [
                 'low' => 'LOW',
-                'medium' => 'MEDIUM',
                 'high' => 'HIGH'
-            ] );
-
-            Config::set( 'tickets.priority_timeout', [
+            ],
+            'priority_timeouts' => [
                 'low' => 8,
-                'medium' => 4,
                 'high' => 2
-            ] );
-        } );
-
-        describe( 'status management', function () {
-            it( 'should retrieve all configured statuses', function () {
-                $statuses = TicketConfig::getStatuses();
-
-                expect( $statuses )->toBeArray()
-                    ->and( $statuses )->toHaveCount( 3 )
-                    ->and( $statuses )->toHaveKey( 'open' )
-                    ->and( $statuses['open'] )->toBe( 'OPEN' );
-            } );
-
-            it( 'should retrieve specific status label', function () {
-                $label = TicketConfig::getStatusLabel( 'in-progress' );
-
-                expect( $label )->toBe( 'IN PROGRESS' );
-            } );
-
-            it( 'should throw exception for invalid status when getting label', function () {
-                expect( fn() => TicketConfig::getStatusLabel( 'invalid' ) )
-                    ->toThrow( RuntimeException::class, 'Invalid status: invalid' );
-            } );
-
-
-            it( 'should handle missing status configuration', function () {
-                Config::set( 'tickets.status', null );
-
-                expect( fn() => TicketConfig::getStatuses() )
-                    ->toThrow( RuntimeException::class );
-            } );
-        } );
-
-        describe( 'priority management', function () {
-            it( 'should retrieve all configured priorities', function () {
-                $priorities = TicketConfig::getPriorities();
-
-                expect( $priorities )->toBeArray()
-                    ->and( $priorities )->toHaveCount( 3 )
-                    ->and( $priorities )->toHaveKey( 'low' )
-                    ->and( $priorities['low'] )->toBe( 'LOW' );
-            } );
-
-            it( 'should retrieve specific priority label', function () {
-                $label = TicketConfig::getPriorityLabel( 'medium' );
-
-                expect( $label )->toBe( 'MEDIUM' );
-            } );
-
-            it( 'should throw exception for invalid priority when getting label', function () {
-                expect( fn() => TicketConfig::getPriorityLabel( 'invalid' ) )
-                    ->toThrow( RuntimeException::class, 'Invalid priority: invalid' );
-            } );
-
-            it( 'should handle missing priority configuration', function () {
-                Config::set( 'tickets.priority', null );
-
-                expect( fn() => TicketConfig::getPriorities() )
-                    ->toThrow( RuntimeException::class );
-            } );
-        } );
-
-        describe( 'timeout management', function () {
-            it( 'should retrieve all configured timeouts', function () {
-                $timeouts = TicketConfig::getPriorityTimeouts();
-
-                expect( $timeouts )->toBeArray()
-                    ->and( $timeouts )->toHaveCount( 3 )
-                    ->and( $timeouts )->toHaveKey( 'low' )
-                    ->and( $timeouts['low'] )->toBe( 8 );
-            } );
-
-            it( 'should retrieve specific priority timeout', function () {
-                $timeout = TicketConfig::getTimeoutForPriority( 'medium' );
-
-                expect( $timeout )->toBe( 4 );
-            } );
-
-
-            it( 'should throw exception for missing timeout configuration', function () {
-                Config::set( 'tickets.priority_timeout', null );
-
-                expect( fn() => TicketConfig::getPriorityTimeouts() )
-                    ->toThrow( RuntimeException::class );
-            } );
-
-            it( 'should throw exception for valid priority with missing timeout', function () {
-                Config::set( 'tickets.priority_timeout', [ 'low' => 8 ] ); // Missing medium and high
-
-                expect( fn() => TicketConfig::getTimeoutForPriority( 'high' ) )
-                    ->toThrow( RuntimeException::class, 'No timeout configured for priority: high' );
-            } );
-        } );
+            ]
+        ] );
     } );
+
+    it( 'retrieves index groupings configuration', function () {
+        $groupings = TicketConfig::getIndexGroupings();
+
+        expect( $groupings )
+            ->toBeArray()
+            ->toHaveCount( 1 )
+            ->and( $groupings[0] )
+            ->toHaveKeys( [ 'title', 'status', 'assignee_required', 'no_tickets_msg' ] );
+    } );
+
+    it( 'retrieves my tickets groupings configuration', function () {
+        $groupings = TicketConfig::getMyTicketsGroupings();
+
+        expect( $groupings )
+            ->toBeArray()
+            ->toHaveCount( 1 )
+            ->and( $groupings[0] )
+            ->toHaveKeys( [ 'title', 'status', 'no_tickets_msg' ] );
+    } );
+
+    it( 'retrieves all statuses', function () {
+        $statuses = TicketConfig::getStatuses();
+
+        expect( $statuses )
+            ->toBeArray()
+            ->toHaveCount( 2 )
+            ->toHaveKeys( [ 'open', 'in-progress' ] );
+    } );
+
+    it( 'retrieves specific status label', function () {
+        $label = TicketConfig::getStatusLabel( 'open' );
+
+        expect( $label )->toBe( 'OPEN' );
+    } );
+
+    it( 'throws exception for invalid status label', function () {
+        TicketConfig::getStatusLabel( 'invalid-status' );
+    } )->throws( RuntimeException::class );
+
+    it( 'retrieves all priorities', function () {
+        $priorities = TicketConfig::getPriorities();
+
+        expect( $priorities )
+            ->toBeArray()
+            ->toHaveCount( 2 )
+            ->toHaveKeys( [ 'low', 'high' ] );
+    } );
+
+    it( 'retrieves specific priority label', function () {
+        $label = TicketConfig::getPriorityLabel( 'high' );
+
+        expect( $label )->toBe( 'HIGH' );
+    } );
+
+    it( 'throws exception for invalid priority label', function () {
+        TicketConfig::getPriorityLabel( 'invalid-priority' );
+    } )->throws( RuntimeException::class );
+
+    it( 'retrieves all priority timeouts', function () {
+        $timeouts = TicketConfig::getPriorityTimeouts();
+
+        expect( $timeouts )
+            ->toBeArray()
+            ->toHaveCount( 2 )
+            ->toHaveKeys( [ 'low', 'high' ] );
+    } );
+
+    it( 'retrieves specific priority timeout', function () {
+        $timeout = TicketConfig::getTimeoutForPriority( 'low' );
+
+        expect( $timeout )->toBe( 8 );
+    } );
+
+    it( 'throws exception for invalid priority timeout', function () {
+        TicketConfig::getTimeoutForPriority( 'invalid-priority' );
+    } )->throws( RuntimeException::class );

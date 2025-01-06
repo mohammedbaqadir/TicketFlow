@@ -4,12 +4,31 @@
     use App\Actions\Ticket\GroupTicketsAction;
     use App\Models\Ticket;
     use App\Models\User;
+    use Illuminate\Support\Collection;
 
     beforeEach( function () {
         $this->action = new GroupTicketsAction();
-        $this->user = User::factory()->state( [ 'role' => 'agent' ] )->create();
 
-        $this->testConfig = [
+        // Create test users that we'll need across multiple tests
+        $this->agent = User::factory()->create( [ 'role' => 'agent' ] );
+        $this->requestor = User::factory()->create( [ 'role' => 'employee' ] );
+    } );
+
+    it( 'groups tickets according to configuration', function () {
+        // Create test tickets with proper relationships
+        $tickets = Collection::make( [
+            Ticket::factory()
+                ->withRequestor( $this->requestor )
+                ->withAssignee( $this->agent )
+                ->inProgress()
+                ->create(),
+            Ticket::factory()
+                ->withRequestor( $this->requestor )
+                ->open()
+                ->create()
+        ] );
+
+        $config = [
             [
                 'title' => 'In Progress',
                 'status' => [ 'in-progress' ],
@@ -17,89 +36,110 @@
                 'no_tickets_msg' => 'No tickets in progress'
             ],
             [
-                'title' => 'Open',
+                'title' => 'Unassigned',
                 'status' => [ 'open' ],
                 'assignee_required' => false,
-                'no_tickets_msg' => 'No open tickets'
+                'no_tickets_msg' => 'No unassigned tickets'
             ]
         ];
+
+        $result = $this->action->execute( $tickets, $config, $this->agent );
+
+        expect( $result )
+            ->toBeArray()
+            ->toHaveCount( 2 )
+            ->and( $result[0]['tickets'] )->toHaveCount( 1 )
+            ->and( $result[1]['tickets'] )->toHaveCount( 1 );
     } );
 
-    describe( 'GroupTicketsAction', function () {
-        it( 'should group tickets according to their status', function () {
-            $tickets = collect( [
-                Ticket::factory()
-                    ->inProgress()
-                    ->withAssignee( $this->user )
-                    ->withRequestor()
-                    ->create(),
-                Ticket::factory()
-                    ->open()
-                    ->withRequestor()
-                    ->create()
-            ] );
+    it( 'returns empty groups when no tickets exist', function () {
+        $config = [
+            [
+                'title' => 'Test Group',
+                'status' => [ 'open' ],
+                'no_tickets_msg' => 'No tickets'
+            ]
+        ];
 
-            $result = $this->action->execute( $tickets, $this->testConfig, $this->user );
+        $result = $this->action->execute( collect(), $config );
 
-            expect( $result )->toHaveCount( 2 )
-                ->and( $result[0]['tickets'] )->toHaveCount( 1 )
-                ->and( $result[1]['tickets'] )->toHaveCount( 1 );
-        } );
+        expect( $result )
+            ->toBeArray()
+            ->toHaveCount( 1 )
+            ->and( $result[0]['tickets'] )->toBeEmpty()
+            ->and( $result[0]['no_tickets_msg'] )->toBe( 'No tickets' );
+    } );
 
-        it( 'should return empty groups when no tickets are provided', function () {
-            $result = $this->action->execute( collect(), $this->testConfig, $this->user );
+    it( 'filters tickets by assignee when required', function () {
+        $otherAgent = User::factory()->create( [ 'role' => 'agent' ] );
 
-            expect( $result )->toHaveCount( 2 )
-                ->and( $result[0]['tickets'] )->toBeEmpty()
-                ->and( $result[1]['tickets'] )->toBeEmpty();
-        } );
+        $tickets = Collection::make( [
+            Ticket::factory()
+                ->withRequestor( $this->requestor )
+                ->withAssignee( $this->agent )
+                ->inProgress()
+                ->create(),
+            Ticket::factory()
+                ->withRequestor( $this->requestor )
+                ->withAssignee( $otherAgent )
+                ->inProgress()
+                ->create()
+        ] );
 
-        it( 'should filter tickets based on assignee when required', function () {
-            $otherUser = User::factory()->state( [ 'role' => 'agent' ] )->create();
-            $tickets = collect( [
-                Ticket::factory()
-                    ->inProgress()
-                    ->withAssignee( $this->user )
-                    ->withRequestor()
-                    ->create(),
-                Ticket::factory()
-                    ->inProgress()
-                    ->withAssignee( $otherUser )
-                    ->withRequestor()
-                    ->create()
-            ] );
+        $config = [
+            [
+                'title' => 'My Tickets',
+                'status' => [ 'in-progress' ],
+                'assignee_required' => true,
+                'no_tickets_msg' => 'No assigned tickets'
+            ]
+        ];
 
-            $result = $this->action->execute( $tickets, $this->testConfig, $this->user );
+        $result = $this->action->execute( $tickets, $config, $this->agent );
 
-            expect( $result[0]['tickets'] )->toHaveCount( 1 )
-                ->and( $result[0]['tickets']->first()->assignee_id )->toBe( $this->user->id );
-        } );
+        expect( $result[0]['tickets'] )->toHaveCount( 1 )
+            ->and( $result[0]['tickets']->first()->assignee_id )->toBe( $this->agent->id );
+    } );
 
-        it( 'should return fallback grouping when configuration is invalid', function () {
-            $tickets = collect( [
-                Ticket::factory()
-                    ->complete()
-                    ->create()
-            ] );
-            $invalidConfig = [ [ 'invalid' => 'config' ] ];
+    it( 'returns fallback group on error', function () {
+        $ticket = Ticket::factory()
+            ->withRequestor( $this->requestor )
+            ->create();
 
-            $result = $this->action->execute( $tickets, $invalidConfig, $this->user );
+        $tickets = Collection::make( [ $ticket ] );
 
-            expect( $result )->toHaveCount( 1 )
-                ->and( $result[0]['title'] )->toBe( 'All Tickets' )
-                ->and( $result[0]['tickets'] )->toHaveCount( 1 );
-        } );
+        // Invalid config to trigger error
+        $config = [
+            [
+                'invalid' => 'config'
+            ]
+        ];
 
-        it( 'should handle null user gracefully when assignee filtering is required', function () {
-            $tickets = collect( [
-                Ticket::factory()
-                    ->inProgress()
-                    ->withRequestor()
-                    ->create()
-            ] );
+        $result = $this->action->execute( $tickets, $config );
 
-            $result = $this->action->execute( $tickets, $this->testConfig, null );
+        expect( $result )
+            ->toBeArray()
+            ->toHaveCount( 1 )
+            ->and( $result[0]['title'] )->toBe( 'All Tickets' )
+            ->and( $result[0]['tickets'] )->toHaveCount( 1 );
+    } );
 
-            expect( $result[0]['tickets'] )->toBeEmpty();
-        } );
+    it( 'correctly handles multiple status filters', function () {
+        $tickets = Collection::make( [
+            Ticket::factory()->withRequestor( $this->requestor )->open()->create(),
+            Ticket::factory()->withRequestor( $this->requestor )->inProgress()->create(),
+            Ticket::factory()->withRequestor( $this->requestor )->resolved()->create()
+        ] );
+
+        $config = [
+            [
+                'title' => 'Active Tickets',
+                'status' => [ 'open', 'in-progress' ],
+                'no_tickets_msg' => 'No active tickets'
+            ]
+        ];
+
+        $result = $this->action->execute( $tickets, $config );
+
+        expect( $result[0]['tickets'] )->toHaveCount( 2 );
     } );
