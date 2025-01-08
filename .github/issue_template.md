@@ -13,9 +13,9 @@
 
 ---
 
-### Problem or Task
+### Description
 
-- What is the problem or task you’re addressing?
+- Clearly describe the **Problem** (if applicable) or **Task** at hand.
 - Why does this matter? (e.g., user impact, technical reason, or business need)
 - Is there any measurable impact? (e.g., error rate, performance metrics)
 
@@ -36,14 +36,6 @@
 3. **What is the expected behavior?**
 
 *(Attach logs, screenshots, or error messages if helpful.)*
-
----
-
-### Solution (Optional)
-
-- Do you have an idea for how to solve this?
-- What approach might you take?
-- Are there constraints or considerations to keep in mind?
 
 ---
 
