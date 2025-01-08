@@ -21,11 +21,9 @@
 
 ---
 
-### Problem
+### Linked Issue
 
-- Which issue does this PR address? (Use `Closes #<issue-number>` to link it.)
-- What is the problem or task being solved?
-- Why is this change necessary?
+- **Closes #<issue-number>**
 
 ---
 
@@ -52,20 +50,3 @@
     - Example: “Added unit tests for new endpoint.”
 - Were any new tests written? If not, why?
 - Did you run linting or other checks?
-
----
-
-### Checklist
-
-- [ ] I have tested my changes locally.
-- [ ] All linting checks and tests pass.
-- [ ] Documentation has been updated (if needed).
-- [ ] This PR addresses only one issue or task.
-- [ ] Code has been reviewed for optimizations or improvements.
-
----
-
-### Media (Optional)
-
-- Attach screenshots, videos, or other media demonstrating the change, if relevant.  
-  *(Example: Before/after UI comparison, performance metrics, etc.)*

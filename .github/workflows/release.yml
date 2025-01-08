@@ -41,7 +41,7 @@ jobs:
           node-version: '20.11.1'
 
       - name: Install Semantic Release
-        run: npm install -D semantic-release@24.2.0
+        run: npm install -D semantic-release@24.2.0 @semantic-release/changelog@6.0.3
 
       # Generates semantic-release config with conventional commit parsing and customized release rules
       # Each commit type maps to a specific release type (major/minor/patch) or no release
@@ -121,6 +121,9 @@ jobs:
                   "linkReferences": true
                 }
               ],
+              ["@semantic-release/changelog", {
+                "changelogFile": "CHANGELOG.md"
+              } ],
               ["@semantic-release/github", {
                 "successComment": ":tada: This issue has been resolved in version ${nextRelease.version} :tada:\n\nThe release is available on [GitHub release](${releases[0].url})",
                 "failComment": ":rotating_light: This release failed due to the following errors:\n\n${errors.map(error => error.message).join('\n')}",
