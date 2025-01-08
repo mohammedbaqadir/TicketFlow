@@ -15,103 +15,175 @@
                 'status.*' => 'string',
                 'assignee_required' => 'sometimes|boolean',
                 'no_tickets_msg' => 'required|string',
-            ],
-            'key_value_pairs' => [
-                'key_type' => 'string',
-                'value_type' => [ 'string', 'integer' ], // Updated to support both string and integer values
-                'allow_empty' => false
             ]
         ];
 
         /**
-         * Validate configuration array structure
+         * Validate that an array exists and is not empty
+         *
+         * @throws RuntimeException
          */
-        private static function validateArrayStructure(
-            array $data,
-            string $type,
-            string $context
-        ) : void {
-            if ( empty( $data ) ) {
+        private static function validateArrayExists( mixed $array, string $context ) : void
+        {
+            if ( !is_array( $array ) ) {
+                throw new RuntimeException( "{$context} configuration must be a valid array" );
+            }
+            if ( empty( $array ) ) {
                 throw new RuntimeException( "{$context} configuration cannot be empty" );
             }
+        }
 
-            if ( $type === 'key_value_pairs' ) {
-                $rules = self::ARRAY_VALIDATION_RULES[ $type ];
-                foreach ( $data as $key => $value ) {
-                    if ( !\is_string( $key ) ) {
-                        throw new RuntimeException( "{$context} keys must be strings" );
-                    }
+        /**
+         * Validate that parallel arrays match in length and exist
+         *
+         * @throws RuntimeException
+         */
+        private static function validateParallelArrays( array $arrays, array $arrayNames, string $context ) : void
+        {
+            $firstLength = count( $arrays[0] );
 
-                    $valueValid = match ( $context ) {
-                        'Priority timeout' => \is_int( $value ) && $value > 0,
-                        default => \is_string( $value ) && !empty( $value )
-                    };
+            foreach ( $arrays as $index => $array ) {
+                self::validateArrayExists( $array, $arrayNames[ $index ] );
 
-                    if ( !$valueValid ) {
-                        throw new RuntimeException(
-                            $context === 'Priority timeout'
-                                ? "{$context} values must be positive integers"
-                                : "{$context} values must be non-empty strings"
-                        );
-                    }
-                }
-            } elseif ( $type === 'groupings' ) {
-                foreach ( $data as $index => $group ) {
-                    if ( !\is_array( $group ) ) {
-                        throw new RuntimeException(
-                            "Invalid {$context} configuration: Group at index {$index} must be an array"
-                        );
-                    }
-
-                    $validator = Validator::make( $group, self::ARRAY_VALIDATION_RULES[ $type ] );
-                    if ( $validator->fails() ) {
-                        throw new RuntimeException(
-                            "Invalid {$context} configuration: " . $validator->errors()->first()
-                        );
-                    }
+                if ( count( $array ) !== $firstLength ) {
+                    throw new RuntimeException(
+                        "{$context}: {$arrayNames[$index]} must have same number of elements as {$arrayNames[0]}"
+                    );
                 }
             }
         }
 
+        /**
+         * Validate string array elements
+         *
+         * @throws RuntimeException
+         */
+        private static function validateStringArray( array $array, string $context ) : void
+        {
+            foreach ( $array as $value ) {
+                if ( !is_string( $value ) || empty( trim( $value ) ) ) {
+                    throw new RuntimeException( "{$context} must contain non-empty strings" );
+                }
+            }
+        }
+
+        /**
+         * Validate positive integer array elements
+         *
+         * @throws RuntimeException
+         */
+        private static function validatePositiveIntegerArray( array $array, string $context ) : void
+        {
+            foreach ( $array as $value ) {
+                if ( !is_int( $value ) || $value <= 0 ) {
+                    throw new RuntimeException( "{$context} must contain positive integers" );
+                }
+            }
+        }
+
+        /**
+         * Validate groupings configuration
+         *
+         * @throws RuntimeException
+         */
         public static function validateGroupings( ?array $groupings ) : void
         {
-            if ( !\is_array( $groupings ) ) {
-                throw new RuntimeException( 'Ticket groupings configuration must be a valid array' );
+            self::validateArrayExists( $groupings, 'Groupings' );
+
+            foreach ( $groupings as $index => $group ) {
+                if ( !is_array( $group ) ) {
+                    throw new RuntimeException(
+                        "Invalid groupings configuration: Group at index {$index} must be an array"
+                    );
+                }
+
+                $validator = Validator::make( $group, self::ARRAY_VALIDATION_RULES['groupings'] );
+                if ( $validator->fails() ) {
+                    throw new RuntimeException(
+                        'Invalid groupings configuration: ' . $validator->errors()->first()
+                    );
+                }
             }
-            self::validateArrayStructure( $groupings, 'groupings', 'Groupings' );
         }
 
-        public static function validateStatuses( $statuses ) : void
+        /**
+         * Validate status configuration structure
+         *
+         * @throws RuntimeException
+         */
+        public static function validateStatuses( ?array $statuses ) : void
         {
-            if ( !\is_array( $statuses ) ) {
-                throw new RuntimeException( 'Ticket statuses configuration must be a valid array' );
-            }
-            self::validateArrayStructure( $statuses, 'key_value_pairs', 'Status' );
-        }
+            self::validateArrayExists( $statuses, 'Statuses' );
 
-        public static function validatePriorities( $priorities ) : void
-        {
-            if ( !\is_array( $priorities ) ) {
-                throw new RuntimeException( 'Ticket priorities configuration must be a valid array' );
+            // Validate basic structure
+            $requiredKeys = [ 'keys', 'labels', 'badges', 'cards' ];
+            foreach ( $requiredKeys as $key ) {
+                if ( !isset( $statuses[ $key ] ) ) {
+                    throw new RuntimeException( "Statuses configuration must contain '{$key}' section" );
+                }
             }
-            self::validateArrayStructure( $priorities, 'key_value_pairs', 'Priority' );
-        }
 
-        public static function validatePriorityTimeouts( $timeouts ) : void
-        {
-            if ( !\is_array( $timeouts ) ) {
-                throw new RuntimeException( 'Priority timeouts configuration must be a valid array' );
-            }
-            self::validateArrayStructure(
-                $timeouts,
-                'key_value_pairs',
-                'Priority timeout'
+            // Validate parallel arrays
+            self::validateParallelArrays(
+                [
+                    $statuses['keys'], $statuses['labels'], $statuses['badges']['styles'],
+                    $statuses['badges']['icons'], $statuses['cards']['backgrounds']
+                ],
+                [ 'keys', 'labels', 'badge styles', 'badge icons', 'card backgrounds' ],
+                'Statuses'
             );
+
+            // Validate content
+            self::validateStringArray( $statuses['keys'], 'Status keys' );
+            self::validateStringArray( $statuses['labels'], 'Status labels' );
+            self::validateStringArray( $statuses['badges']['styles'], 'Status badge styles' );
+            self::validateStringArray( $statuses['badges']['icons'], 'Status badge icons' );
+            self::validateStringArray( $statuses['cards']['backgrounds'], 'Status card backgrounds' );
         }
 
+        /**
+         * Validate priority configuration structure
+         *
+         * @throws RuntimeException
+         */
+        public static function validatePriorities( ?array $priorities ) : void
+        {
+            self::validateArrayExists( $priorities, 'Priorities' );
+
+            // Validate basic structure
+            $requiredKeys = [ 'keys', 'labels', 'timeouts', 'badges' ];
+            foreach ( $requiredKeys as $key ) {
+                if ( !isset( $priorities[ $key ] ) ) {
+                    throw new RuntimeException( "Priorities configuration must contain '{$key}' section" );
+                }
+            }
+
+            // Validate parallel arrays
+            self::validateParallelArrays(
+                [
+                    $priorities['keys'], $priorities['labels'], $priorities['timeouts'],
+                    $priorities['badges']['styles'], $priorities['badges']['icons']
+                ],
+                [ 'keys', 'labels', 'timeouts', 'badge styles', 'badge icons' ],
+                'Priorities'
+            );
+
+            // Validate content
+            self::validateStringArray( $priorities['keys'], 'Priority keys' );
+            self::validateStringArray( $priorities['labels'], 'Priority labels' );
+            self::validatePositiveIntegerArray( $priorities['timeouts'], 'Priority timeouts' );
+            self::validateStringArray( $priorities['badges']['styles'], 'Priority badge styles' );
+            self::validateStringArray( $priorities['badges']['icons'], 'Priority badge icons' );
+        }
+
+        /**
+         * Validate existence of a key in valid values
+         *
+         * @throws RuntimeException
+         */
         public static function validateExistence( string $key, array $validValues, string $context ) : void
         {
-            if ( !isset( $validValues[ $key ] ) ) {
+            if ( !in_array( $key, $validValues, true ) ) {
                 throw new RuntimeException( "Invalid {$context}: {$key}" );
             }
         }
