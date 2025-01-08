@@ -1,4 +1,5 @@
 <?php
+    declare( strict_types = 1 );
 
     namespace Database\Factories;
 
@@ -15,8 +16,8 @@
             return [
                 'title' => $this->faker->sentence,
                 'description' => $this->faker->paragraph,
-                'status' => Arr::random( array_keys( TicketConfig::getStatuses() ) ),
-                'priority' => Arr::random( array_keys( TicketConfig::getPriorities() ) ),
+                'status' => Arr::random( TicketConfig::getStatusKeys() ),
+                'priority' => Arr::random( TicketConfig::getPriorityKeys() ),
                 'timeout_at' => $this->faker->dateTimeBetween( '-2 hours', '+2 hours' ),
                 'requestor_id' => null,  // Optional by default
                 'assignee_id' => null,   // Optional by default
