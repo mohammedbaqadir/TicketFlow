@@ -1,19 +1,9 @@
+@php use App\Config\TicketConfig; @endphp
 @props(['ticket'])
 
-@php
-    $statusBackgrounds = [
-        'open' => 'bg-teal-200 dark:bg-teal-700',
-        'in-progress' => 'bg-amber-200 dark:bg-amber-700',
-        'awaiting-acceptance' => 'bg-lime-200 dark:bg-lime-700',
-        'escalated' => 'bg-rose-200 dark:bg-rose-700',
-        'resolved' => 'bg-emerald-200 dark:bg-emerald-700',
-    ];
-
-    $backgroundClass = $statusBackgrounds[$ticket->status] ?? $statusBackgrounds['open'];
-    $isPendingAction = in_array($ticket->status, ['in-progress', 'awaiting-acceptance']);
-@endphp
-
-<div class="rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg {{ $backgroundClass }} {{ $isPendingAction ? 'col-span-full' : '' }}">
+<div class="rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg {{ TicketConfig::getCardBackgroundForStatus($ticket->status) }}
+ {{
+in_array($ticket->status, ['in-progress', 'awaiting-acceptance']) ? 'col-span-full' : '' }}">
     <div class="p-4 flex flex-col justify-between h-full">
         <div class="flex flex-col sm:flex-row justify-between items-start mb-4">
 
