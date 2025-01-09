@@ -80,4 +80,4 @@ jobs:
           PROD_UNSPLASH_RATE_LIMITING_ENABLED: ${{ secrets.PROD_UNSPLASH_RATE_LIMITING_ENABLED }}
           PROD_UNSPLASH_RATE_LIMITING_THRESHOLD: ${{ secrets.PROD_UNSPLASH_RATE_LIMITING_THRESHOLD }}
         run: |
-          ssh -o StrictHostKeyChecking=no $PROD_DEPLOY_USER@$PROD_DEPLOY_HOST "bash deploy.sh $GITHUB_SHA"
+          ssh -o StrictHostKeyChecking=no $PROD_DEPLOY_USER@$PROD_DEPLOY_HOST "bash -l deploy.sh $GITHUB_SHA"
