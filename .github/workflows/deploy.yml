@@ -4,6 +4,7 @@ on:
   workflow_run:
     workflows: [ "Release" ]
     types: [ completed ]
+  workflow_dispatch:
 
 jobs:
   pre-deployment-checks:
@@ -80,4 +81,17 @@ jobs:
           PROD_UNSPLASH_RATE_LIMITING_ENABLED: ${{ secrets.PROD_UNSPLASH_RATE_LIMITING_ENABLED }}
           PROD_UNSPLASH_RATE_LIMITING_THRESHOLD: ${{ secrets.PROD_UNSPLASH_RATE_LIMITING_THRESHOLD }}
         run: |
-          ssh -o StrictHostKeyChecking=no $PROD_DEPLOY_USER@$PROD_DEPLOY_HOST "bash -l deploy.sh $GITHUB_SHA"
+          ssh -o StrictHostKeyChecking=no $PROD_DEPLOY_USER@$PROD_DEPLOY_HOST "export PROD_APP_URL=\"$PROD_APP_URL\" && \
+          export PROD_DB_HOST=\"$PROD_DB_HOST\" && \
+          export PROD_DB_NAME=\"$PROD_DB_NAME\" && \
+          export PROD_DB_PASSWORD=\"$PROD_DB_PASSWORD\" && \
+          export PROD_DB_PORT=\"$PROD_DB_PORT\" && \
+          export PROD_DB_USER=\"$PROD_DB_USER\" && \
+          export PROD_MEILISEARCH_HOST=\"$PROD_MEILISEARCH_HOST\" && \
+          export PROD_MEILISEARCH_KEY=\"$PROD_MEILISEARCH_KEY\" && \
+          export PROD_OPENROUTER_API_KEY=\"$PROD_OPENROUTER_API_KEY\" && \
+          export PROD_JITSI_COOKIE=\"$PROD_JITSI_COOKIE\" && \
+          export PROD_UNSPLASH_ACCESS_KEY=\"$PROD_UNSPLASH_ACCESS_KEY\" && \
+          export PROD_UNSPLASH_RATE_LIMITING_ENABLED=\"$PROD_UNSPLASH_RATE_LIMITING_ENABLED\" && \
+          export PROD_UNSPLASH_RATE_LIMITING_THRESHOLD=\"$PROD_UNSPLASH_RATE_LIMITING_THRESHOLD\" && \
+          bash -l deploy.sh $GITHUB_SHA"
