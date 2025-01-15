@@ -22,4 +22,5 @@ bootstrap/cache/
 Homestead.json
 Homestead.yaml
 npm-debug.log
+phpstan.neon
 yarn-error.log

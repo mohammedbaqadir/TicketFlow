@@ -72,7 +72,7 @@
         public function registerMediaCollections() : void
         {
             // Disable fallback in CI
-            if ( env( 'CI', false ) ) {
+            if ( config( 'app.ci' ) ) {
                 $this->addMediaCollection( 'avatar' )
                     ->singleFile()
                     ->onlyKeepLatest( 1 );

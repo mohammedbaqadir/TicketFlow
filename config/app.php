@@ -127,5 +127,7 @@
             'store' => Env::get( 'APP_MAINTENANCE_STORE', 'database' ),
         ],
 
+        'ci' => Env::getOrFail( 'CI' ),
+
 
     ];

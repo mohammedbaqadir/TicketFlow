@@ -30,6 +30,7 @@
   },
   "require-dev": {
     "fakerphp/faker": "^1.23",
+    "larastan/larastan": "^3.0",
     "laravel/breeze": "^2.1",
     "laravel/pint": "^1.13",
     "laravel/sail": "^1.26",
@@ -38,7 +39,12 @@
     "pestphp/pest": "^3.2",
     "pestphp/pest-plugin-faker": "^3.0",
     "pestphp/pest-plugin-laravel": "^3.0",
-    "roave/security-advisories": "dev-latest"
+    "phpstan/extension-installer": "^1.4",
+    "phpstan/phpstan": "^2.1",
+    "phpstan/phpstan-deprecation-rules": "^2.0",
+    "phpstan/phpstan-mockery": "^2.0",
+    "roave/security-advisories": "dev-latest",
+    "tomasvotruba/bladestan": "^0.7.0"
   },
   "autoload": {
     "psr-4": {
@@ -83,7 +89,8 @@
     "sort-packages": true,
     "allow-plugins": {
       "pestphp/pest-plugin": true,
-      "php-http/discovery": true
+      "php-http/discovery": true,
+      "phpstan/extension-installer": true
     }
   },
   "minimum-stability": "stable",

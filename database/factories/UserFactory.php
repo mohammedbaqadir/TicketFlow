@@ -59,7 +59,7 @@
         private function assignAvatar( User $user ) : void
         {
             // Skip avatar assignment in CI
-            if ( env( 'CI', false ) ) {
+            if ( config( 'app.ci' ) ) {
                 return;
             }
 
