@@ -23,10 +23,17 @@
         protected $casts = [ 'is_accepted' => 'boolean' ];
 
 
+        /**
+         * @return BelongsTo<User>
+         */
         public function submitter() : BelongsTo
         {
             return $this->belongsTo( User::class, 'submitter_id' );
         }
+
+        /**
+         * @return BelongsTo<Ticket>
+         */
 
         public function ticket() : BelongsTo
         {

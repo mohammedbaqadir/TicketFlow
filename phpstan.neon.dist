@@ -1,0 +1,9 @@
+parameters:
+    paths:
+        - app
+        - routes
+        - database
+    bladestan:
+        template_paths:
+            - resources/views
+    level: 5

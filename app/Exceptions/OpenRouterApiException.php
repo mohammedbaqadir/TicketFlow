@@ -93,7 +93,7 @@
          */
         public function getErrorMetadata() : array
         {
-            return $this->errorMetadata ?? [];
+            return $this->errorMetadata;
         }
 
         /**

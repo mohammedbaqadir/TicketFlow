@@ -15,7 +15,7 @@
                 $answer = Answer::create( $this->prepareAnswerData( $data ) );
                 $answer->ticket->update( [ 'status' => 'awaiting-acceptance' ] );
 
-                return $answer->ticket->fresh( [ 'requestor', 'assignee', 'answers' ] );
+                return $answer->ticket->fresh( [ 'ticket.requestor', 'ticket.assignee', 'ticket.answers' ] );
             } );
         }
 

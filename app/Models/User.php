@@ -3,13 +3,25 @@
 
     namespace App\Models;
 
+    use Illuminate\Database\Eloquent\Collection;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
+    use Illuminate\Database\Eloquent\Relations\BelongsTo;
     use Illuminate\Database\Eloquent\Relations\HasMany;
     use Illuminate\Database\Eloquent\SoftDeletes;
     use Illuminate\Foundation\Auth\User as Authenticatable;
     use Spatie\MediaLibrary\HasMedia;
     use Spatie\MediaLibrary\InteractsWithMedia;
 
+    /**
+     * @property int $id
+     * @property string $name
+     * @property string $email
+     * @property array $preferences
+     * @property bool $is_locked
+     * @property int $lockout_count
+     * @property-read string $preferred_theme
+     * @property-read Collection<int, Ticket> $tickets
+     */
     class User extends Authenticatable implements HasMedia
     {
         use InteractsWithMedia;
@@ -28,16 +40,25 @@
             'lockout_time' => 'datetime',
         ];
 
+        /**
+         * @return HasMany<Ticket>
+         */
         public function tickets() : HasMany
         {
             return $this->hasMany( Ticket::class, 'requestor_id' );
         }
 
+        /**
+         * @return HasMany<Ticket>
+         */
         public function assignedTickets() : HasMany
         {
             return $this->hasMany( Ticket::class, 'assignee_id' );
         }
 
+        /**
+         * @return HasMany<Answer>
+         */
         public function answers() : HasMany
         {
             return $this->hasMany( Answer::class, 'submitter_id' );
@@ -72,7 +93,7 @@
         public function registerMediaCollections() : void
         {
             // Disable fallback in CI
-            if ( env( 'CI', false ) ) {
+            if ( config( 'app.ci' ) ) {
                 $this->addMediaCollection( 'avatar' )
                     ->singleFile()
                     ->onlyKeepLatest( 1 );
