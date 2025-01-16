@@ -140,7 +140,8 @@
             'key' => Env::getOrFail( 'MEILISEARCH_KEY' ),
             'index-settings' => [
                 Ticket::class => [
-                    'filterableAttributes' => [ 'requestor_id' ],
+                    'filterableAttributes' => [ 'requestor_id', 'assignee_id' ],
+                    'sortableAttributes' => [ 'created_at' ],
                 ],
             ],
         ],

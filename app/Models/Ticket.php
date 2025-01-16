@@ -17,6 +17,14 @@
     use Spatie\Activitylog\LogOptions;
     use Spatie\Activitylog\Traits\LogsActivity;
 
+    /**
+     * @property int $id
+     * @property string $title
+     * @property string $description
+     * @property int $meeting_room
+     * @property-read User $requestor
+     * @property-read User|null $assignee
+     */
     #[ObservedBy( [ TicketObserver::class ] )]
     class Ticket extends Model
     {
@@ -35,21 +43,34 @@
         ];
 
         // Relationships
+
+        /**
+         * @return BelongsTo<User>
+         */
         public function requestor() : BelongsTo
         {
             return $this->belongsTo( User::class, 'requestor_id' );
         }
 
+        /**
+         * @return BelongsTo<User>
+         */
         public function assignee() : BelongsTo
         {
             return $this->belongsTo( User::class, 'assignee_id' );
         }
 
+        /**
+         * @return HasMany<Answer>
+         */
         public function answers() : HasMany
         {
             return $this->hasMany( Answer::class );
         }
 
+        /**
+         * @return HasOne<Answer>
+         */
         public function acceptedAnswer() : HasOne
         {
             return $this->hasOne( Answer::class, 'id', 'accepted_answer_id' );
@@ -95,22 +116,6 @@
                 'description' => $this->description,
                 'requestor_id' => $this->requestor_id,
                 'assignee_id' => $this->assignee_id,
-            ];
-        }
-
-        /**
-         * Configure Scout settings for the Meilisearch index.
-         *
-         * @return array
-         */
-        #[SearchUsingSettings]
-        public function searchableSettings() : array
-        {
-            return [
-                'filterableAttributes' => [
-                    'requestor_id',  // Make requestor_id filterable
-                    'assignee_id',   // Make assignee_id filterable
-                ],
             ];
         }
 
