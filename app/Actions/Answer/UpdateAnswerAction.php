@@ -13,7 +13,7 @@
         {
             return DB::transaction( function () use ( $answer, $data ) {
                 $answer->update( $this->prepareAnswerData( $data ) );
-                return $answer->ticket->fresh( [ 'requestor', 'assignee', 'answers' ] );
+                return $answer->ticket->fresh( [ 'ticket.requestor', 'ticket.assignee', 'ticket.answers' ] );
             } );
         }
 
