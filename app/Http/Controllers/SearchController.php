@@ -7,8 +7,10 @@
     use App\Http\Requests\SearchRequest;
     use App\Models\Ticket;
     use App\Models\User;
+    use Illuminate\Database\Eloquent\Collection;
     use Illuminate\Http\JsonResponse;
     use Illuminate\Http\Request;
+    use Illuminate\Pagination\LengthAwarePaginator;
     use Illuminate\Validation\ValidationException;
 
     class SearchController extends Controller
@@ -51,10 +53,10 @@
                 $searchQuery->where( 'requestor_id', $user->id );
             }
 
-            // Paginate search results
+            /** @var LengthAwarePaginator<Ticket> $paginatedResults */
             $paginatedResults = $searchQuery->paginate( $perPage, 'page', $page );
 
-            // Load relationships directly on the paginated result set
+            /** @var Collection<int, Ticket> $tickets */
             $tickets = Ticket::whereIn( 'id', $paginatedResults->pluck( 'id' ) )
                 ->withRelations()
                 ->get();
