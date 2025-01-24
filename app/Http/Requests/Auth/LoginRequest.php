@@ -26,9 +26,8 @@
 
         /**
          * Get the validation rules that apply to the request.
-         * @return array<string, ValidationRule|array|string>
+         * @return array<string, array<int, string>|ValidationRule>
          */
-
         public function rules() : array
         {
             return [
@@ -54,9 +53,15 @@
             // Record the login attempt and apply rate limiting
             app( LoginAttemptAction::class )->execute( $this->input( 'email' ), $this->ip() );
 
+
             // Attempt authentication
-            if ( !app( AuthenticateUserAction::class )->execute( $this->only( 'email', 'password' ),
-                $this->boolean( 'remember' ) ) ) {
+            $credentials = $this->only( 'email', 'password' );
+            /** @var array{email: string, password: string} $credentials */
+
+            if ( !app( AuthenticateUserAction::class )->execute( [
+                'email' => (string) $credentials['email'],
+                'password' => (string) $credentials['password'],
+            ], $this->boolean( 'remember' ) ) ) {
                 if ( $user ) {
                     app( AccountLockoutAction::class )->execute( $user );
                 }

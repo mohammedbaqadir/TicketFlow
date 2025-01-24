@@ -9,7 +9,9 @@
 
     class UpdateTicketAction
     {
-
+        /**
+         * @param  array{title?: string, description?: string}  $data
+         */
         public function execute( Ticket $ticket, array $data ) : Ticket
         {
             return DB::transaction( function () use ( $ticket, $data ) {
@@ -22,12 +24,16 @@
             } );
         }
 
+        /**
+         * @param  array{title?: string, description?: string}  $data
+         * @return array{title?: string, description?: string}
+         */
         private function prepareTicketData( array $data ) : array
         {
             return array_filter( [
-                'title' => $data['title'],
-                'description' => $data['description'],
-            ] );
+                'title' => $data['title'] ?? null,
+                'description' => $data['description'] ?? null,
+            ], fn( $value ) => $value !== null );
         }
 
     }

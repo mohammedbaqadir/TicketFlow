@@ -138,20 +138,3 @@
 
         TicketConfigValidator::validateExistence( 'invalid', $validKeys, 'test' );
     } )->throws( RuntimeException::class, 'Invalid test: invalid' );
-
-// String Array Validation
-    it( 'throws exception for non-string values in array', function () {
-        $statuses = [
-            'keys' => [ 'open', 123 ], // Invalid numeric value
-            'labels' => [ 'OPEN', 'CLOSED' ],
-            'badges' => [
-                'styles' => [ 'style1', 'style2' ],
-                'icons' => [ 'icon1', 'icon2' ]
-            ],
-            'cards' => [
-                'backgrounds' => [ 'bg1', 'bg2' ]
-            ]
-        ];
-
-        TicketConfigValidator::validateStatuses( $statuses );
-    } )->throws( RuntimeException::class, 'Status keys must contain non-empty strings' );

@@ -42,7 +42,7 @@ jobs:
         run: |
           cat > .releaserc.json << 'EOF'
           {
-            "branches": ["main", {name: 'beta', prerelease: true}, { name: 'alpha', prerelease: true }],
+            "branches": ["main", {"name": "beta", "prerelease": true}, {"name": "alpha", "prerelease": true}],
             "dryRun": true,
             "ci": false,
             "plugins": [

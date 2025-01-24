@@ -6,6 +6,10 @@
 
     class ShowToastNotificationAction
     {
+        /**
+         * @param  array{message: string, description?: string, type?: string, position?: string, html?: string}  $details
+         */
+
         public function trigger( array $details ) : string
         {
             $message = $details['message'];

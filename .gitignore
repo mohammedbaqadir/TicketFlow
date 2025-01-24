@@ -4,6 +4,8 @@
 /.fleet
 /.idea
 /.vscode
+.phpstorm.meta.php
+_ide_helper*
 .phpactor.json
 .phpunit.cache
 .phpunit.result.cache

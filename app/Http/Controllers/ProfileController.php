@@ -4,13 +4,14 @@
     namespace App\Http\Controllers;
 
     use App\Helpers\AuthHelper;
-    use Illuminate\Support\Facades\Auth;
+    use Illuminate\Contracts\View\View;
+
 
     class ProfileController extends Controller
     {
-        public function index()
+        public function index() : View
         {
-            $user = Auth::user();
+            $user = auth()->user();
 
             if ( $user === null ) {
                 abort( 403, 'Unauthorized access' );
@@ -66,6 +67,5 @@
 
             return view( 'profile.index', compact( 'user', 'stats', 'role' ) );
         }
-
 
     }

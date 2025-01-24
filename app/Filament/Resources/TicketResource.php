@@ -12,14 +12,10 @@
     use App\Filament\Resources\TicketResource\Pages\ViewTicket;
     use App\Models\Ticket;
     use App\Models\User;
-    use App\Repositories\TicketRepository;
-    use App\Services\TicketService;
     use Exception;
     use Filament\Forms\Components\MarkdownEditor;
     use \Filament\Forms\Form;
     use Filament\Forms\Components\Select;
-    use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-    use Filament\Forms\Components\Textarea;
     use Filament\Forms\Components\TextInput;
     use Filament\Navigation\NavigationItem;
     use Filament\Resources\Resource;
@@ -58,13 +54,19 @@
         /**
          * Get the navigation items for the resource.
          *
-         * @return array
+         * @return array<int, NavigationItem>
          */
         public static function getNavigationItems() : array
         {
             return self::getTicketsNavigationItems();
         }
 
+        /**
+         * Define the form schema for the resource.
+         *
+         * @param  Form  $form
+         * @return Form
+         */
         public static function form( $form ) : Form
         {
             return $form
@@ -132,7 +134,7 @@
                             if ( $data['action'] === 'assign_to_self' ) {
                                 ( new AssignTicketAction() )->execute( $record, auth()->user() );
                             } elseif ( $data['action'] === 'assign_to_agent' ) {
-                                $agent = User::findOrFail( $data['agent_id'] );
+                                $agent = User::where( 'id', $data['agent_id'] )->firstOrFail();
                                 ( new AssignTicketAction() )->execute( $record, $agent );
                             }
                             return redirect()->route( 'filament.app.resources.tickets.view', $record );
@@ -178,6 +180,11 @@
             ];
         }
 
+        /**
+         * Generate navigation items for tickets based on their statuses.
+         *
+         * @return array<int, NavigationItem>
+         */
         private static function getTicketsNavigationItems() : array
         {
             $nav_items = [];

@@ -38,7 +38,7 @@
             return AuthHelper::userHasRole( 'admin' );
         }
 
-        public function accept( User $user, Answer $answer )
+        public function accept( User $user, Answer $answer ) : bool
         {
             $ticketOfAnswer = $answer->ticket;
             return AuthHelper::userIsRequestor( $ticketOfAnswer );

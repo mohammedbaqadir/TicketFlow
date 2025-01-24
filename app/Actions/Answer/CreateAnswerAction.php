@@ -4,28 +4,40 @@
     namespace App\Actions\Answer;
 
     use App\Models\Answer;
+    use App\Models\Ticket;
     use Illuminate\Support\Facades\DB;
 
     class CreateAnswerAction
     {
 
-        public function execute( array $data ) : Answer
+        /**
+         * @param  array{content: string, ticket_id: int}  $data
+         */
+        public function execute( array $data ) : ?Ticket
         {
             return DB::transaction( function () use ( $data ) {
                 $answer = Answer::create( $this->prepareAnswerData( $data ) );
-                $answer->ticket->update( [ 'status' => 'awaiting-acceptance' ] );
 
-                return $answer->ticket->fresh( [ 'ticket.requestor', 'ticket.assignee', 'ticket.answers' ] );
+                if ( $answer->ticket ) {
+                    $answer->ticket->update( [ 'status' => 'awaiting-acceptance' ] );
+                    return $answer->ticket->fresh( [ 'requestor', 'assignee', 'answers' ] );
+                }
+
+                return null;
             } );
         }
 
+        /**
+         * @param  array{content: string, ticket_id: int}  $data
+         * @return array{content: string, submitter_id: int, ticket_id: int}
+         */
         private function prepareAnswerData( array $data ) : array
         {
-            return array_filter( [
-                'content' => $data['content'],
-                'submitter_id' => auth()->id(),
-                'ticket_id' => $data['ticket_id'],
-            ] );
+            return [
+                'content' => (string) $data['content'],
+                'submitter_id' => (int) auth()->id(),
+                'ticket_id' => (int) $data['ticket_id'],
+            ];
         }
 
     }

@@ -6,14 +6,16 @@
 
     use App\Models\User;
     use Illuminate\Database\Eloquent\Factories\Factory;
+    use Illuminate\Database\Eloquent\Model;
     use Illuminate\Support\Arr;
     use Illuminate\Support\Facades\Log;
     use Xchimx\UnsplashApi\Facades\Unsplash;
 
+    /**
+     * @extends Factory<User>
+     */
     class UserFactory extends Factory
     {
-        protected $model = User::class;
-
         private ?string $gender = null;
 
         /**
@@ -28,9 +30,7 @@
             return $this->gender;
         }
 
-        /**
-         * Core user definition.
-         */
+        
         public function definition() : array
         {
             $firstName = $this->faker->firstName( $this->getGender() );
@@ -48,7 +48,9 @@
          */
         public function configure() : self
         {
-            return $this->afterCreating( function ( User $user ) {
+            return $this->afterCreating( function ( Model $model ) {
+                /** @var User $user */
+                $user = $model;
                 $this->assignAvatar( $user );
             } );
         }

@@ -32,8 +32,13 @@
             CreateAnswerAction $createAnswerAction
         ) : RedirectResponse {
             $this->authorize( 'answer', $ticket );
-            $updatedTicket = $createAnswerAction->execute( array_merge( $request->validated(),
-                [ 'ticket_id' => $ticket->id ] ) );
+            $validatedData = $request->validated();
+
+            /** @var array{content: string} $validatedData */
+            $updatedTicket = $createAnswerAction->execute( [
+                'content' => (string) $validatedData['content'],
+                'ticket_id' => (int) $ticket->id,
+            ] );
 
             return redirect()->route( 'tickets.show', $updatedTicket )
                 ->withToast( 'Submitted!', 'Your answer was submitted successfully', 'success' );
@@ -51,7 +56,13 @@
             UpdateAnswerAction $updateAnswerAction
         ) : RedirectResponse {
             $this->authorize( 'update', $answer );
-            $updatedTicket = $updateAnswerAction->execute( $answer, $request->validated() );
+            $validatedData = $request->validated();
+
+            /** @var array{content: string} $validatedData */
+            $updatedTicket = $updateAnswerAction->execute( $answer, [
+                'content' => (string) $validatedData['content'],
+            ] );
+
 
             return redirect()->route( 'tickets.show', $updatedTicket )
                 ->withToast( 'updated!', 'Your answer was updated successfully', 'success' );

@@ -4,13 +4,11 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'database/migrations/**'
       - '**.php'
       - 'composer.lock'
   pull_request:
     branches: [ main ]
     paths:
-      - 'database/migrations/**'
       - '**.php'
       - 'composer.lock'
 

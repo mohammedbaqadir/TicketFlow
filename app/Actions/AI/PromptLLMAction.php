@@ -29,8 +29,8 @@
          * Generate text using OpenRouter AI
          *
          * @param  string  $prompt
-         * @param  array  $options  Additional options to customize the AI request
-         * @return array Response details including text and metadata
+         * @param  array<string, mixed>  $options  Additional options to customize the AI request
+         * @return array<string, mixed> Response details including text and metadata
          * @throws OpenRouterApiException
          */
         public function execute( string $prompt, array $options = [] ) : array
@@ -63,7 +63,9 @@
 
         /**
          * Prepare the request payload
-         */
+         * @param  array<string, mixed>  $options
+         * @return array<string, mixed>
+         **/
         private function preparePayload( string $prompt, array $options ) : array
         {
             $defaultPayload = [
@@ -93,29 +95,29 @@
                 'too many requests',
             ];
 
-            $isRetriable = false;
-
             $errorMessage = strtolower( $e->getMessage() );
             foreach ( $retriableConditions as $condition ) {
                 if ( stripos( $errorMessage, $condition ) !== false ) {
-                    $isRetriable = true;
-                    break;
+                    return true;
                 }
             }
 
-            if ( $e instanceof RequestException && $e->response ) {
-                $responseStatus = $e->response->status(); // Access status via response property
+            if ( $e instanceof RequestException ) {
+                $responseStatus = $e->response->status();
                 $retriableStatuses = [ 429, 500, 502, 503, 504 ];
 
-                $isRetriable = $isRetriable || \in_array( $responseStatus, $retriableStatuses, true );
+                if ( \in_array( $responseStatus, $retriableStatuses, true ) ) {
+                    return true;
+                }
             }
 
-            return $isRetriable;
+            return false;
         }
 
 
         /**
          * Prepare API request headers
+         * @return array<string, string>
          */
         private function prepareHeaders() : array
         {
@@ -129,6 +131,7 @@
 
         /**
          * Log error information
+         * @param  array<string, mixed>  $options
          */
         private function logError( \Exception $e, string $prompt, array $options ) : void
         {

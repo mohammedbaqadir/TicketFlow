@@ -11,7 +11,7 @@
         /**
          * Attempt to authenticate the user.
          *
-         * @param  array  $credentials
+         * @param  array{email: string, password: string}  $credentials
          * @param  bool  $remember
          * @return bool
          */
@@ -21,7 +21,9 @@
 
             if ( $authenticated ) {
                 $user = Auth::user();
-                $this->resetLockoutCount( $user );
+                if ( $user instanceof User ) {
+                    $this->resetLockoutCount( $user );
+                }
             }
 
             return $authenticated;

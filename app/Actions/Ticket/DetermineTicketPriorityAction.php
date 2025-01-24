@@ -6,6 +6,7 @@
     use App\Actions\AI\PromptLLMAction;
     use App\Config\TicketConfig;
     use App\Models\Ticket;
+    use Illuminate\Support\Carbon;
     use Illuminate\Support\Facades\Log;
 
     class DetermineTicketPriorityAction
@@ -17,6 +18,9 @@
             $this->prompt_LLM_action = $prompt_LLM_action;
         }
 
+        /**
+         * @return array{priority: string, timeout_at: Carbon}
+         */
         public function execute( Ticket $ticket ) : array
         {
             $priority = $this->determinePriority( $ticket->title, $ticket->description );

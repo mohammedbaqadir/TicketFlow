@@ -16,6 +16,9 @@
     use Illuminate\Support\Str;
     use Symfony\Component\HttpFoundation\Response;
 
+    /**
+     * @method RedirectResponse withToast( string $message, string $description = '', string $type = 'success', string $position = 'top-right', string $html = '' )
+     */
     class AppServiceProvider extends ServiceProvider
     {
         /**
@@ -47,7 +50,6 @@
             $this->setGlobalRateLimit();
             $this->setAuthRateLimit();
             $this->setLoginRateLimit();
-
         }
 
         /**

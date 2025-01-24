@@ -7,20 +7,10 @@
     use App\Actions\Ticket\DeleteTicketAction;
     use App\Actions\Ticket\UnassignTicketAction;
     use App\Helpers\AuthHelper;
-    use App\Livewire\SolutionEntry;
-    use App\Models\User;
-    use App\Repositories\AnswerRepository;
-    use App\Repositories\TicketRepository;
-    use App\Services\AnswerService;
-    use App\Services\SolutionService;
     use Filament\Actions\Action;
     use Filament\Actions\EditAction;
     use Filament\Forms\Components\Hidden;
     use Filament\Forms\Components\MarkdownEditor;
-    use Filament\Forms\Components\Select;
-    use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-    use Filament\Forms\Components\Textarea;
-    use Filament\Infolists\Components\Livewire;
     use Filament\Infolists\Components\RepeatableEntry;
     use Filament\Infolists\Components\Section;
     use Filament\Infolists\Components\Split;
@@ -29,18 +19,20 @@
     use Filament\Notifications\Notification;
     use App\Filament\Resources\TicketResource;
     use App\Models\Ticket;
-    use App\Services\TicketService;
     use Filament\Infolists\Components\TextEntry;
     use Filament\Infolists\Infolist;
     use Filament\Resources\Pages\ViewRecord;
     use Illuminate\Contracts\Support\Htmlable;
-    use Njxqlus\Filament\Components\Infolists\LightboxSpatieMediaLibraryImageEntry;
 
 
     /**
      * Class ViewTicket
      *
      * Handles viewing of a single ticket with actions and widgets.
+     */
+
+    /**
+     * @property Ticket $record
      */
     class ViewTicket extends ViewRecord
     {
@@ -50,7 +42,7 @@
         protected static string $resource = TicketResource::class;
 
         /**
-         * @return string|null
+         * @return string|Htmlable
          */
         public function getHeading() : string|Htmlable
         {
@@ -108,7 +100,7 @@
          * Get the header actions for the ticket view.
          * Disables actions if the ticket status is closed.
          *
-         * @return array
+         * @return array<int, Action>
          */
         protected function getHeaderActions() : array
         {
@@ -149,7 +141,14 @@
                         Hidden::make( 'ticket_id' )->default( $this->record->getKey() )
                     ] )
                     ->action( function ( array $data ) {
-                        ( new CreateAnswerAction() )->execute( $data );
+                        // Explicitly cast to ensure correct types
+                        $validatedData = [
+                            'content' => (string) $data['content'],
+                            'ticket_id' => (int) $data['ticket_id'],
+                        ];
+
+                        ( new CreateAnswerAction() )->execute( $validatedData );
+
                         Notification::make()
                             ->title( 'Success' )
                             ->body( 'Answer submitted successfully.' )

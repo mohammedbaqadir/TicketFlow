@@ -18,10 +18,9 @@
 
         /**
          * Parsed error metadata
-         *
-         * @var array
+         * @var array{code?: int|string|null, message?: string|null, metadata?: array<mixed>}
          */
-        protected $errorMetadata;
+        protected array $errorMetadata = [];
 
         /**
          * Create a new OpenRouter API Exception
@@ -89,7 +88,7 @@
         /**
          * Get parsed error metadata
          *
-         * @return array
+         * @return array{code?: int|string|null, message?: string|null, metadata?: array<mixed>}
          */
         public function getErrorMetadata() : array
         {

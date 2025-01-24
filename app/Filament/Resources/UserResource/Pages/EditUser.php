@@ -4,7 +4,6 @@
     namespace App\Filament\Resources\UserResource\Pages;
 
     use App\Filament\Resources\UserResource;
-    use Filament\Actions;
     use Filament\Actions\DeleteAction;
     use Filament\Resources\Pages\EditRecord;
 
@@ -18,7 +17,6 @@
                 DeleteAction::make(),
             ];
         }
-
 
 
     }

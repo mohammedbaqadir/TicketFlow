@@ -3,21 +3,27 @@
 
     namespace App\Actions\Ticket;
 
+    use App\Models\Ticket;
     use App\Models\User;
     use Illuminate\Support\Collection;
-    use InvalidArgumentException;
     use Throwable;
 
     class GroupTicketsAction
     {
         /**
          * Group tickets based on provided configuration
-         *
-         * @param  Collection  $tickets  The collection of tickets to group
-         * @param  array  $groupConfigs  Array of group configurations
-         * @param  User|null  $user  The current user (optional)
-         * @return array Grouped tickets with titles and messages
-         * @throws InvalidArgumentException When group configuration is invalid
+         * @param  Collection<int, Ticket>  $tickets
+         * @param  array<int, array{
+         *      title: string,
+         *      no_tickets_msg: string,
+         *      status: array<string>,
+         *      assignee_required?: bool
+         *  }>  $groupConfigs
+         * @return array<int, array{
+         *      title: string,
+         *      tickets: Collection<int, Ticket>,
+         *      no_tickets_msg: string
+         * }>
          */
         public function execute( Collection $tickets, array $groupConfigs, ?User $user = null ) : array
         {
@@ -43,12 +49,14 @@
         }
 
         /**
-         * Filter tickets based on configuration
-         *
-         * @param  Collection  $tickets
-         * @param  array  $config
-         * @param  User|null  $user
-         * @return Collection
+         * @param  Collection<int, Ticket>  $tickets
+         * @param  array{
+         *     title: string,
+         *     no_tickets_msg: string,
+         *     status: array<string>,
+         *     assignee_required?: bool
+         * }  $config
+         * @return Collection<int, Ticket>
          */
         private function filterTickets( Collection $tickets, array $config, ?User $user ) : Collection
         {
@@ -79,21 +87,33 @@
 
         /**
          * Check if ticket status matches configuration
-         *
-         * @param $ticket
-         * @param  array  $config
-         * @return bool
+         * @param  Ticket  $ticket
+         * @param  array{
+         *     title: string,
+         *     no_tickets_msg: string,
+         *     status: array<string>,
+         *     assignee_required?: bool
+         * }  $config
          */
         private function matchesStatus( $ticket, array $config ) : bool
         {
             return \in_array( $ticket->status, $config['status'], true );
         }
 
+
         /**
          * Generate empty groups from configuration
-         *
-         * @param  array  $groupConfigs
-         * @return array
+         * @param  array<int, array{
+         *     title: string,
+         *     no_tickets_msg: string,
+         *     status: array<string>,
+         *     assignee_required?: bool
+         * }>  $groupConfigs
+         * @return array<int, array{
+         *     title: string,
+         *     tickets: Collection<int, Ticket>,
+         *     no_tickets_msg: string
+         * }>
          */
         private function getEmptyGroups( array $groupConfigs ) : array
         {
@@ -111,9 +131,12 @@
 
         /**
          * Generate fallback groups in case of error
-         *
-         * @param  Collection  $tickets
-         * @return array
+         * @param  Collection<int, Ticket>  $tickets
+         * @return array<int, array{
+         *     title: string,
+         *     tickets: Collection<int, Ticket>,
+         *     no_tickets_msg: string
+         * }>
          */
         private function getFallbackGroups( Collection $tickets ) : array
         {

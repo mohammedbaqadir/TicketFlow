@@ -212,7 +212,7 @@
         /**
          * Get badge style for a specific priority
          *
-         * @param  string  $status  priority key to get badge style for
+         * @param  string  $priority  priority key to get badge style for
          * @return string badge styles tailwind classes
          * @throws RuntimeException
          */
@@ -240,7 +240,7 @@
         /**
          * Get icon for a specific priority
          *
-         * @param  string  $status  priority key to get icon for
+         * @param  string  $priority  priority key to get icon for
          * @return string hero icon class
          * @throws RuntimeException
          */

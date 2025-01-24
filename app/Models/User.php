@@ -3,9 +3,9 @@
 
     namespace App\Models;
 
+    use Illuminate\Database\Eloquent\Builder;
     use Illuminate\Database\Eloquent\Collection;
     use Illuminate\Database\Eloquent\Factories\HasFactory;
-    use Illuminate\Database\Eloquent\Relations\BelongsTo;
     use Illuminate\Database\Eloquent\Relations\HasMany;
     use Illuminate\Database\Eloquent\SoftDeletes;
     use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -16,10 +16,10 @@
      * @property int $id
      * @property string $name
      * @property string $email
-     * @property array $preferences
+     * @property array<string, mixed> $preferences
      * @property bool $is_locked
      * @property int $lockout_count
-     * @property-read string $preferred_theme
+     * @property string $preferred_theme
      * @property-read Collection<int, Ticket> $tickets
      */
     class User extends Authenticatable implements HasMedia
@@ -41,7 +41,7 @@
         ];
 
         /**
-         * @return HasMany<Ticket>
+         * @return HasMany<Ticket, User>
          */
         public function tickets() : HasMany
         {
@@ -49,7 +49,7 @@
         }
 
         /**
-         * @return HasMany<Ticket>
+         * @return HasMany<Ticket, User>
          */
         public function assignedTickets() : HasMany
         {
@@ -57,7 +57,7 @@
         }
 
         /**
-         * @return HasMany<Answer>
+         * @return HasMany<Answer, User>
          */
         public function answers() : HasMany
         {
@@ -65,7 +65,7 @@
         }
 
 
-        public function getPreferredThemeAttribute()
+        public function getPreferredThemeAttribute() : string
         {
             return $this->preferences['theme'] ?? 'light';
         }
@@ -73,19 +73,28 @@
         /**
          * @throws \JsonException
          */
-        public function setPreferredThemeAttribute( $value ) : void
+        public function setPreferredThemeAttribute( string $value ) : void
         {
             $preferences = $this->preferences ?? [];
             $preferences['theme'] = $value;
             $this->attributes['preferences'] = json_encode( $preferences, JSON_THROW_ON_ERROR );
         }
 
-        public function scopeIsAgent( $query )
+        /**
+         * @param  Builder<User>  $query
+         * @return Builder<User>
+         */
+        public function scopeIsAgent( $query ) : Builder
         {
             return $query->where( 'role', 'agent' );
         }
 
-        public function scopeIsEmployee( $query )
+        /**
+         * @param  Builder<User>  $query
+         * @return Builder<User>
+         */
+
+        public function scopeIsEmployee( $query ) : Builder
         {
             return $query->where( 'role', 'employee' );
         }

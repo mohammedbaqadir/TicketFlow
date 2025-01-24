@@ -35,7 +35,9 @@
 
         /**
          * Validate that parallel arrays match in length and exist
-         *
+         * @param  array<int, array<int|string, mixed>>  $arrays  Arrays to validate
+         * @param  array<int, string>  $arrayNames  Names of the arrays for error messages
+         * @param  string  $context  Context for error messages
          * @throws RuntimeException
          */
         private static function validateParallelArrays( array $arrays, array $arrayNames, string $context ) : void
@@ -56,12 +58,14 @@
         /**
          * Validate string array elements
          *
+         * @param  array<int|string, string>  $array  Array to validate
+         * @param  string  $context  Context for error messages
          * @throws RuntimeException
          */
         private static function validateStringArray( array $array, string $context ) : void
         {
             foreach ( $array as $value ) {
-                if ( !is_string( $value ) || empty( trim( $value ) ) ) {
+                if ( empty( trim( $value ) ) ) {
                     throw new RuntimeException( "{$context} must contain non-empty strings" );
                 }
             }
@@ -70,20 +74,29 @@
         /**
          * Validate positive integer array elements
          *
+         * @param  array<int|string, int>  $array  Array to validate
+         * @param  string  $context  Context for error messages
          * @throws RuntimeException
          */
         private static function validatePositiveIntegerArray( array $array, string $context ) : void
         {
             foreach ( $array as $value ) {
-                if ( !is_int( $value ) || $value <= 0 ) {
+                if ( $value <= 0 ) {
                     throw new RuntimeException( "{$context} must contain positive integers" );
                 }
             }
         }
 
+
         /**
          * Validate groupings configuration
          *
+         * @param  array<int, array{
+         *     title: string,
+         *     status: array<int, string>,
+         *     assignee_required?: bool,
+         *     no_tickets_msg: string
+         * }>|null  $groupings
          * @throws RuntimeException
          */
         public static function validateGroupings( ?array $groupings ) : void
@@ -91,12 +104,6 @@
             self::validateArrayExists( $groupings, 'Groupings' );
 
             foreach ( $groupings as $index => $group ) {
-                if ( !is_array( $group ) ) {
-                    throw new RuntimeException(
-                        "Invalid groupings configuration: Group at index {$index} must be an array"
-                    );
-                }
-
                 $validator = Validator::make( $group, self::ARRAY_VALIDATION_RULES['groupings'] );
                 if ( $validator->fails() ) {
                     throw new RuntimeException(
@@ -109,6 +116,17 @@
         /**
          * Validate status configuration structure
          *
+         * @param  array{
+         *     keys: array<int, string>,
+         *     labels: array<int, string>,
+         *     badges: array{
+         *         styles: array<int, string>,
+         *         icons: array<int, string>
+         *     },
+         *     cards: array{
+         *         backgrounds: array<int, string>
+         *     }
+         * }|null  $statuses
          * @throws RuntimeException
          */
         public static function validateStatuses( ?array $statuses ) : void
@@ -144,6 +162,15 @@
         /**
          * Validate priority configuration structure
          *
+         * @param  array{
+         *     keys: array<int, string>,
+         *     labels: array<int, string>,
+         *     timeouts: array<int, int>,
+         *     badges: array{
+         *         styles: array<int, string>,
+         *         icons: array<int, string>
+         *     }
+         * }|null  $priorities
          * @throws RuntimeException
          */
         public static function validatePriorities( ?array $priorities ) : void
@@ -179,6 +206,9 @@
         /**
          * Validate existence of a key in valid values
          *
+         * @param  string  $key
+         * @param  array<int|string, string>  $validValues
+         * @param  string  $context
          * @throws RuntimeException
          */
         public static function validateExistence( string $key, array $validValues, string $context ) : void

@@ -18,8 +18,7 @@
         /**
          * Fetches and calculates performance data for the chart.
          * This focuses on the percentage of tickets resolved on time based on priority and resolution time per day.
-         *
-         * @return array
+         * @return array{datasets: array<int, array{label: string, data: array<int, float|int>, borderColor: string, fill: bool}>, labels: array<int, string>}
          */
         protected function getData() : array
         {
@@ -66,19 +65,19 @@
                 'datasets' => [
                     [
                         'label' => 'Daily Ticket Resolution Performance (%)',
-                        'data' => $performanceByDay->values(), // Performance scores for each day
+                        'data' => $performanceByDay->values()->toArray(), // Performance scores for each day
                         'borderColor' => '#36A2EB', // Color of the line in the chart
                         'fill' => false, // No fill below the line
                     ],
                 ],
-                'labels' => $performanceByDay->keys(), // Days (X-axis labels) representing when tickets were resolved
+                'labels' => $performanceByDay->keys()->toArray(), // Days (X-axis labels) representing when tickets were
+                // resolved
             ];
         }
 
         /**
          * Provides filtering options for the widget, allowing users to view data for different time ranges.
-         *
-         * @return ?array
+         * @return array<string, string>
          */
         protected function getFilters() : ?array
         {
