@@ -45,7 +45,7 @@
         // Relationships
 
         /**
-         * @return BelongsTo<User>
+         * @return BelongsTo<User, Ticket>
          */
         public function requestor() : BelongsTo
         {
@@ -53,7 +53,7 @@
         }
 
         /**
-         * @return BelongsTo<User>
+         * @return BelongsTo<User, Ticket>
          */
         public function assignee() : BelongsTo
         {
@@ -61,7 +61,7 @@
         }
 
         /**
-         * @return HasMany<Answer>
+         * @return HasMany<Answer, Ticket>
          */
         public function answers() : HasMany
         {
@@ -69,7 +69,7 @@
         }
 
         /**
-         * @return HasOne<Answer>
+         * @return HasOne<Answer, Ticket>
          */
         public function acceptedAnswer() : HasOne
         {
@@ -87,7 +87,10 @@
             return TicketConfig::getPriorityLabel( $this->priority );
         }
 
-
+        /**
+         * @param  Builder<Ticket>  $query
+         * @return Builder<Ticket>
+         */
         public function scopeWithRelations( Builder $query ) : Builder
         {
             return $query->with( [
@@ -96,9 +99,14 @@
             ] );
         }
 
+        /**
+         * @param  Builder<Ticket>  $query
+         * @return Builder<Ticket>
+         */
+
         public function scopeUnresolved( Builder $query ) : Builder
         {
-            return $query->whereNot( 'status', '!=', 'resolved' );
+            return $query->where( 'status', '!=', 'resolved' );
         }
 
         // Activity Log
@@ -107,7 +115,11 @@
             return LogOptions::defaults()->useLogName( 'ticket' );
         }
 
-        // Scout Search
+        /**
+         * Get the indexable data array for the model.
+         *
+         * @return array<string, mixed>
+         */
         public function toSearchableArray() : array
         {
             return [

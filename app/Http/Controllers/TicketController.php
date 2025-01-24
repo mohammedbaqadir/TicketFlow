@@ -53,7 +53,14 @@
         public function store( StoreTicketRequest $request, CreateTicketAction $createTicketAction ) : RedirectResponse
         {
             $this->authorize( 'create', Ticket::class );
-            $ticket = $createTicketAction->execute( $request->validated() );
+            $validatedData = $request->validated();
+
+            /** @var array{title: string, description: string} $validatedData */
+            $ticket = $createTicketAction->execute( [
+                'title' => (string) $validatedData['title'],
+                'description' => (string) $validatedData['description'],
+            ] );
+
 
             return redirect()->route( 'tickets.show', $ticket )
                 ->withToast( 'Created!', 'Your ticket was Created successfully', 'success' );

@@ -9,17 +9,18 @@
     use App\Http\Controllers\ToastController;
     use App\Http\Controllers\UserPreferenceController;
     use Illuminate\Support\Facades\Route;
+    use Illuminate\View\View;
 
 // Public routes
-    Route::get( '/error', static function () {
+    Route::get( '/error', static function () : View {
         return view( 'error' );
     } )->name( 'error' );
 
-    Route::get( '/faq', function () {
+    Route::get( '/faq', function () : View {
         return view( 'faq' );
     } )->name( 'faq' );
 
-    Route::get( '/privacy-policy', function () {
+    Route::get( '/privacy-policy', function () : View {
         return view( 'privacy-policy' );
     } )->name( 'privacy-policy' );
 

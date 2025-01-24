@@ -6,20 +6,19 @@
     use App\Filament\Resources\TicketResource;
     use App\Jobs\DetermineTicketPriorityJob;
     use App\Models\Ticket;
-    use App\Repositories\TicketRepository;
-    use App\Services\TicketService;
     use Filament\Resources\Pages\CreateRecord;
-    use Illuminate\Support\Facades\DB;
 
     /**
      * Class CreateTicket
      *
      * Handles the creation of a ticket.
      */
+
+    /**
+     * @property Ticket $record
+     */
     class CreateTicket extends CreateRecord
     {
-
-
         /**
          * The associated resource.
          *
@@ -27,12 +26,11 @@
          */
         protected static string $resource = TicketResource::class;
 
-
         /**
          * Mutate form data before creating a ticket.
          *
-         * @param  array  $data
-         * @return array
+         * @param  array<string, mixed>  $data
+         * @return array<string, mixed>
          */
         protected function mutateFormDataBeforeCreate( array $data ) : array
         {
@@ -44,9 +42,7 @@
 
         protected function afterCreate() : void
         {
-            $ticket = $this->record;
-
-            DetermineTicketPriorityJob::dispatch( $ticket );
+            DetermineTicketPriorityJob::dispatch( $this->record );
         }
 
         protected function getRedirectUrl() : string

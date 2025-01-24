@@ -3,13 +3,14 @@
 
     namespace App\Http\Controllers;
 
+    use App\Models\User;
+    use Illuminate\Contracts\View\View;
     use Illuminate\Http\JsonResponse;
     use Illuminate\Http\Request;
-    use Illuminate\Support\Facades\Auth;
 
     class UserPreferenceController extends Controller
     {
-        public function index()
+        public function index() : View
         {
             return view( 'preferences' );
         }
@@ -20,7 +21,13 @@
                 'theme' => 'required|in:light,dark',
             ] );
 
-            $user = Auth::user();
+            /** @var User|null $user */
+            $user = auth()->user();
+
+            if ( !$user ) {
+                return response()->json( [ 'error' => 'Unauthenticated' ], 401 );
+            }
+
             $user->preferred_theme = $request->theme;
             $user->save();
 

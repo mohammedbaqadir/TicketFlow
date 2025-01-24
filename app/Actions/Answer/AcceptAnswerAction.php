@@ -21,7 +21,7 @@
         {
             return DB::transaction( function () use ( $answer ) {
                 $answer->update( [ 'is_accepted' => true ] );
-                $ticket = $answer->ticket->withRelations()->with( [ 'answers' ] )->get();
+                $ticket = $answer->ticket->withRelations()->with( [ 'answers' ] )->first();
                 return $this->resolveTicketAction->execute( $ticket, $answer->id );
             } );
         }

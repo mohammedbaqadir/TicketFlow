@@ -4,13 +4,23 @@
     namespace Database\Factories;
 
     use App\Config\TicketConfig;
+    use App\Models\Ticket;
     use App\Models\User;
     use Carbon\Carbon;
     use Illuminate\Database\Eloquent\Factories\Factory;
     use Illuminate\Support\Arr;
 
+    /**
+     * @extends Factory<Ticket>
+     */
     class TicketFactory extends Factory
     {
+        /**
+         * The name of the factory's corresponding model.
+         * @var class-string<Ticket>
+         */
+        protected $model = Ticket::class;
+
         public function definition() : array
         {
             return [
@@ -33,7 +43,7 @@
         public function withRequestor( ?User $user = null ) : self
         {
             return $this->state( fn( array $attributes ) => [
-                'requestor_id' => $user?->id ??
+                'requestor_id' => $user->id ??
                     User::factory()->state( [ 'role' => 'employee' ] )->create()->id
             ] );
         }
@@ -44,7 +54,7 @@
         public function withAssignee( ?User $user = null ) : self
         {
             return $this->state( fn( array $attributes ) => [
-                'assignee_id' => $user?->id ??
+                'assignee_id' => $user->id ??
                     User::factory()->state( [ 'role' => 'agent' ] )->create()->id
             ] );
         }

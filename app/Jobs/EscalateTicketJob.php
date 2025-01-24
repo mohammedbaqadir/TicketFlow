@@ -6,8 +6,8 @@
     use App\Actions\Ticket\EscalateTicketAction;
     use App\Models\Ticket;
     use Exception;
+    use Illuminate\Support\Carbon;
     use Illuminate\Contracts\Queue\ShouldQueue;
-    use Illuminate\Database\QueryException;
     use Illuminate\Foundation\Bus\Dispatchable;
     use Illuminate\Foundation\Queue\Queueable;
     use Illuminate\Queue\InteractsWithQueue;
@@ -15,7 +15,6 @@
     use Illuminate\Support\Facades\Cache;
     use Illuminate\Support\Facades\DB;
     use Illuminate\Support\Facades\Log;
-    use RuntimeException;
 
     /**
      *
@@ -42,6 +41,9 @@
             $this->ticket = $ticket;
         }
 
+        /**
+         * @return Carbon
+         */
         public function retryUntil()
         {
             return now()->addMinutes( 10 ); // Allow retries for 10 minutes

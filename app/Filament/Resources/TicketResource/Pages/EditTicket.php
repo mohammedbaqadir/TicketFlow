@@ -6,13 +6,9 @@
     use App\Filament\Resources\TicketResource;
     use App\Jobs\DetermineTicketPriorityJob;
     use App\Models\Ticket;
-    use App\Repositories\TicketRepository;
-    use App\Services\TicketService;
+    use Filament\Actions\Action;
     use Filament\Actions\DeleteAction;
     use Filament\Forms\Components\MarkdownEditor;
-    use Filament\Forms\Components\Select;
-    use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-    use Filament\Forms\Components\Textarea;
     use Filament\Forms\Components\TextInput;
     use Filament\Forms\Form;
     use Filament\Resources\Pages\EditRecord;
@@ -21,6 +17,10 @@
      * Class EditTicket
      *
      * Handles the editing of a ticket.
+     */
+
+    /**
+     * @property Ticket $record
      */
     class EditTicket extends EditRecord
     {
@@ -45,16 +45,14 @@
 
         protected function afterSave() : void
         {
-            $ticket = $this->record;
-
-            DetermineTicketPriorityJob::dispatch( $ticket );
+            DetermineTicketPriorityJob::dispatch( $this->record );
         }
 
 
         /**
          * Get the header actions for the edit page.
          *
-         * @return array
+         * @return array<int, Action>
          */
         protected function getHeaderActions() : array
         {

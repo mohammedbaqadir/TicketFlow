@@ -11,6 +11,7 @@
     use Illuminate\Foundation\Queue\Queueable;
     use Illuminate\Queue\InteractsWithQueue;
     use Illuminate\Queue\SerializesModels;
+    use Illuminate\Support\Carbon;
     use Illuminate\Support\Facades\DB;
     use Illuminate\Support\Facades\Log;
     use RuntimeException;
@@ -28,6 +29,9 @@
             $this->ticket = $ticket;
         }
 
+        /**
+         * @return Carbon
+         */
         public function retryUntil()
         {
             return now()->addMinutes( 10 ); // Allow retries for 10 minutes
@@ -42,7 +46,7 @@
 
                     DB::afterCommit( function () use ( $data ) {
                         EscalateTicketJob::dispatch( $this->ticket )
-                            ->delay( $data['timeout_at']->diffInSeconds( now() ) + 5 );
+                            ->delay( (int) ( $data['timeout_at']->diffInSeconds( now() ) + 5 ) );
                     } );
                 } );
             } catch (QueryException $e) {

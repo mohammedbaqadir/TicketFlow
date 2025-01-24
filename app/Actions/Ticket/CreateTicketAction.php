@@ -11,9 +11,8 @@
     {
         /**
          * Create a new ticket and queue priority determination.
-         *
-         * @param  array  $data
-         * @return Ticket
+         * @param  array{title: string, description: string}  $data
+         * * @return Ticket
          */
         public function execute( array $data ) : Ticket
         {
@@ -31,18 +30,17 @@
 
         /**
          * Prepare ticket data for creation.
-         *
-         * @param  array  $data
-         * @return array
+         * @param  array{title: string, description: string}  $data
+         * @return array{title: string, description: string, requestor_id: int, status: string}
          */
         private function prepareTicketData( array $data ) : array
         {
-            return array_filter( [
-                'title' => $data['title'],
-                'description' => $data['description'],
-                'requestor_id' => auth()->id(),
+            return [
+                'title' => (string) $data['title'],
+                'description' => (string) $data['description'],
+                'requestor_id' => (int) auth()->id(),
                 'status' => 'open',
-            ] );
+            ];
         }
 
     }

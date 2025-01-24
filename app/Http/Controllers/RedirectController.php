@@ -11,12 +11,15 @@
     {
         public function redirect() : RedirectResponse
         {
-            $route = match ( auth()->user()->role ) {
+            $route = match ( auth()->user()?->role ) {
                 'admin' => 'filament.app.pages.dashboard',
                 'agent' => 'tickets.index',
                 'employee' => 'my-tickets',
+                default => 'login',
             };
+
             return redirect()->route( $route );
         }
+
 
     }

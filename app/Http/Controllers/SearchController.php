@@ -9,9 +9,7 @@
     use App\Models\User;
     use Illuminate\Database\Eloquent\Collection;
     use Illuminate\Http\JsonResponse;
-    use Illuminate\Http\Request;
     use Illuminate\Pagination\LengthAwarePaginator;
-    use Illuminate\Validation\ValidationException;
 
     class SearchController extends Controller
     {
@@ -38,12 +36,21 @@
 
         /**
          * Perform the actual search based on user role and query.
-         *
-         * @param  string  $query  The search query
-         * @param  User  $user  The authenticated user
-         * @param  int  $page  The current page number
-         * @param  int  $perPage  The number of results per page
-         * @return array
+         * @return array{
+         *     data: \Illuminate\Support\Collection<int, array{
+         *         id: int,
+         *         type: string,
+         *         title: string,
+         *         excerpt: string,
+         *         created_at: string,
+         *         created_by: string,
+         *         assignee: string
+         *     }>,
+         *     current_page: int,
+         *     last_page: int,
+         *     per_page: int,
+         *     total: int
+         * }
          */
         private function searchContent( string $query, User $user, int $page, int $perPage ) : array
         {
@@ -67,7 +74,7 @@
                     'type' => 'ticket',
                     'title' => $ticket->title,
                     'excerpt' => $ticket->generateExcerpt( $query ),
-                    'created_at' => $ticket->created_at,
+                    'created_at' => (string) $ticket->created_at->toDateTimeString(),
                     'created_by' => $ticket->requestor->name,
                     'assignee' => $ticket->assignee ? $ticket->assignee->name : 'Unassigned',
                 ];

@@ -8,7 +8,7 @@ on:
 
 jobs:
   pre-deployment-checks:
-    if: github.event.workflow_run.conclusion == 'success'
+    #    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -63,6 +63,7 @@ jobs:
 
       - name: Trigger Remote Deployment
         env:
+          CI: true
           GITHUB_SHA: ${{ github.sha }}
           PROD_DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
           PROD_DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}

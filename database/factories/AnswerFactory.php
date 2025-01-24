@@ -15,7 +15,12 @@
         /**
          * Define the model's default state.
          *
-         * @return array<string, mixed>
+         * @return array{
+         *     content: string,
+         *     submitter_id: int,
+         *     ticket_id: int,
+         *     is_accepted: bool
+         * }
          */
         public function definition() : array
         {

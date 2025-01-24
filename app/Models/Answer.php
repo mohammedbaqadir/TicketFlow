@@ -11,10 +11,13 @@
     use Illuminate\Database\Eloquent\SoftDeletes;
     use Spatie\Activitylog\LogOptions;
     use Spatie\Activitylog\Traits\LogsActivity;
+    use Illuminate\Database\Eloquent\Builder;
+
 
     #[ObservedBy( [ AnswerObserver::class ] )]
     class Answer extends Model
     {
+
         use LogsActivity;
         use SoftDeletes;
         use HasFactory;
@@ -24,7 +27,7 @@
 
 
         /**
-         * @return BelongsTo<User>
+         * @return BelongsTo<User, Answer>
          */
         public function submitter() : BelongsTo
         {
@@ -32,7 +35,7 @@
         }
 
         /**
-         * @return BelongsTo<Ticket>
+         * @return BelongsTo<Ticket, Answer>
          */
 
         public function ticket() : BelongsTo
@@ -40,8 +43,11 @@
             return $this->belongsTo( Ticket::class );
         }
 
-
-        public function scopeAccepted( $query )
+        /**
+         * @param  Builder<Answer>  $query
+         * @return Builder<Answer>
+         */
+        public function scopeAccepted( Builder $query )
         {
             return $query->where( 'is_accepted', true );
         }

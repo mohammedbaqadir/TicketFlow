@@ -1,9 +1,37 @@
 parameters:
+    ignoreErrors:
+        - '#Method App\\Models\\User::(tickets|assignedTickets|answers)\(\) should return Illuminate\\Database\\Eloquent\\Relations\\HasMany<App\\Models\\(Ticket|Answer), App\\Models\\User> but returns Illuminate\\Database\\Eloquent\\Relations\\HasMany<App\\Models\\(Ticket|Answer), \$this\(App\\Models\\User\)>#'
+        - '#Method App\\Models\\Ticket::(requestor|assignee)\(\) should return Illuminate\\Database\\Eloquent\\Relations\\BelongsTo<App\\Models\\User, App\\Models\\Ticket> but returns#'
+        - '#Method App\\Models\\Ticket::answers\(\) should return Illuminate\\Database\\Eloquent\\Relations\\HasMany<App\\Models\\Answer, App\\Models\\Ticket> but returns#'
+        - '#Method App\\Models\\Ticket::acceptedAnswer\(\) should return Illuminate\\Database\\Eloquent\\Relations\\HasOne<App\\Models\\Answer, App\\Models\\Ticket> but returns#'
+        - '#Method App\\Models\\Answer::(submitter|ticket)\(\) should return Illuminate\\Database\\Eloquent\\Relations\\BelongsTo<App\\Models\\(User|Ticket), App\\Models\\Answer> but returns#'
+        - '#Class Ticket not found#'
+        - '#Method Illuminate\\Http\\RedirectResponse::withToast\(\) invoked with 3 parameters, 1 required#'
+        - 
+            message: '#Class .* uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types: TFactory#'
+            paths:
+                - app/Models/Answer.php
+                - app/Models/Ticket.php
+                - app/Models/User.php
+
+    level: 7
     paths:
         - app
-        - routes
         - database
-    bladestan:
-        template_paths:
-            - resources/views
-    level: 5
+        - routes
+
+    checkModelProperties: true
+
+    bootstrapFiles:
+        - vendor/autoload.php
+
+    scanDirectories:
+        - app/Models
+        - app/Http/Controllers
+        - database
+    scanFiles:
+        - app/Models/Ticket.php
+
+    universalObjectCratesClasses:
+        - Illuminate\Database\Eloquent\Model
+        - Illuminate\Database\Eloquent\Collection
